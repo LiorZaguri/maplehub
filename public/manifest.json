@@ -1,0 +1,26 @@
+{
+  "name": "MapleHub",
+  "short_name": "MapleHub",
+  "description": "A comprehensive MapleStory character and boss tracking application",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/maple-leaf.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.ico",
+      "sizes": "32x32",
+      "type": "image/x-icon"
+    }
+  ],
+  "categories": ["games", "productivity"],
+  "lang": "en",
+  "dir": "ltr"
+}

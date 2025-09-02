@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MapleHub - Character & Boss Management</title>
+    <meta name="description" content="MapleHub: Track Maplestory characters, bosses, tasks, and progression with live integrations." />
+    <meta name="author" content="MapleHub" />
+
+    <!-- Performance optimizations -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="/src/main.tsx" as="script" />
+    <link rel="preload" href="/src/index.css" as="style" />
+    
+    <!-- Manifest and icons -->
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" type="image/svg+xml" href="/maple-leaf.svg" />
+    <link rel="apple-touch-icon" href="/maple-leaf.svg" />
+    
+    <!-- Theme color -->
+    <meta name="theme-color" content="#3b82f6" />
+    <meta name="msapplication-TileColor" content="#3b82f6" />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="MapleHub - Character & Boss Management" />
+    <meta property="og:description" content="MapleHub: Track Maplestory characters, bosses, tasks, and progression with live integrations." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/maple-leaf.svg" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="MapleHub - Character & Boss Management" />
+    <meta name="twitter:description" content="MapleHub: Track Maplestory characters, bosses, tasks, and progression with live integrations." />
+    
+    <!-- Performance hints -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="format-detection" content="telephone=no" />
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Performance monitoring -->
+    <script>
+      // Track Core Web Vitals
+      if ('PerformanceObserver' in window) {
+        const observer = new PerformanceObserver((list) => {
+          for (const entry of list.getEntries()) {
+            if (entry.entryType === 'largest-contentful-paint') {
+              console.log('LCP:', entry.startTime);
+            }
+          }
+        });
+        observer.observe({ entryTypes: ['largest-contentful-paint'] });
+      }
+    </script>
+  </body>
+</html>
