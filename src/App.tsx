@@ -36,8 +36,13 @@ const GitHubPagesRedirect = () => {
     // Check if we're on GitHub Pages and need to redirect
     if (window.location.search.includes('?/')) {
       const redirect = window.location.search.replace('?/', '');
-      if (redirect) {
-        window.history.replaceState(null, '', redirect);
+      if (redirect && redirect !== '&') {
+        // Clean up the URL and navigate
+        const cleanPath = '/' + redirect.replace(/~and~/g, '/');
+        window.history.replaceState(null, '', cleanPath);
+      } else {
+        // Remove the malformed query string
+        window.history.replaceState(null, '', '/');
       }
     }
   }, []);

@@ -55,14 +55,16 @@
       var pathSegmentsToKeep = 1;
 
       var l = window.location;
-      if (l.pathname.split("/").length > 1 + pathSegmentsToKeep) {
-        l.replace(
-          l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
-          l.pathname.split('/').slice(0, 1 + pathSegmentsToKeep).join('/') + '/?/' +
-          l.pathname.slice(1).split('/').slice(pathSegmentsToKeep).join('/').replace(/&/g, '~and~') +
-          (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
-          l.hash
-        );
+      // Only redirect if we have a path beyond the base and no query string
+      if (l.pathname.split("/").length > 1 + pathSegmentsToKeep && !l.search.includes('?/')) {
+        var redirect = l.pathname.slice(1).split('/').slice(pathSegmentsToKeep).join('/');
+        if (redirect) {
+          l.replace(
+            l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+            l.pathname.split('/').slice(0, 1 + pathSegmentsToKeep).join('/') + '/?/' + redirect +
+            l.hash
+          );
+        }
       }
     </script>
     
