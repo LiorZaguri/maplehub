@@ -2,25 +2,14 @@ const CACHE_NAME = 'maplehub-v1';
 const STATIC_CACHE = 'maplehub-static-v1';
 const DYNAMIC_CACHE = 'maplehub-dynamic-v1';
 
-// Get the base path for GitHub Pages
-const getBasePath = () => {
-  // Check if we're on GitHub Pages
-  if (location.hostname.includes('github.io')) {
-    return '/maplehub';
-  }
-  return '';
-};
-
-const BASE_PATH = getBasePath();
-
 const STATIC_ASSETS = [
-  BASE_PATH + '/',
-  BASE_PATH + '/index.html',
-  BASE_PATH + '/manifest.json',
-  BASE_PATH + '/favicon.ico',
-  BASE_PATH + '/maple-leaf.svg',
-  BASE_PATH + '/placeholder.svg',
-  BASE_PATH + '/404.html'
+  '/',
+  '/index.html',
+  '/manifest.json',
+  '/favicon.ico',
+  '/maple-leaf.svg',
+  '/placeholder.svg',
+  '/404.html'
 ];
 
 // Install event - cache static assets
