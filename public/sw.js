@@ -6,7 +6,7 @@ const DYNAMIC_CACHE = 'maplehub-dynamic-v1';
 const getBasePath = () => {
   // Check if we're on GitHub Pages
   if (location.hostname.includes('github.io')) {
-    return '/MapleHub';
+    return '/maplehub';
   }
   return '';
 };

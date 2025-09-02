@@ -31,8 +31,8 @@ A comprehensive MapleStory character and boss tracking application built with Re
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/MapleHub.git
-cd MapleHub
+git clone https://github.com/LiorZaguri/maplehub.git
+cd maplehub
 
 # Install dependencies
 npm install
@@ -79,7 +79,7 @@ npm run clean
 3. **The GitHub Action will automatically**:
    - Build your application
    - Deploy to GitHub Pages
-   - Your app will be available at: `https://yourusername.github.io/MapleHub/`
+   - Your app will be available at: `https://liorzaguri.github.io/maplehub/`
 
 ### Manual Deployment
 
