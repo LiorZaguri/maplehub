@@ -20,8 +20,7 @@ const STATIC_ASSETS = [
   BASE_PATH + '/favicon.ico',
   BASE_PATH + '/maple-leaf.svg',
   BASE_PATH + '/placeholder.svg',
-  BASE_PATH + '/404.html',
-  BASE_PATH + '/_redirects'
+  BASE_PATH + '/404.html'
 ];
 
 // Install event - cache static assets
@@ -57,20 +56,6 @@ self.addEventListener('fetch', (event) => {
   
   // Skip chrome-extension and other non-http requests
   if (!request.url.startsWith('http')) return;
-  
-  // Handle GitHub Pages routing
-  if (request.url.includes('github.io') && !request.url.includes('?/')) {
-    const url = new URL(request.url);
-    if (url.pathname !== '/' && url.pathname !== '/index.html' && !url.pathname.includes('.')) {
-      // This is a route, serve index.html
-      event.respondWith(
-        caches.match(BASE_PATH + '/index.html').then((response) => {
-          return response || fetch(request);
-        })
-      );
-      return;
-    }
-  }
   
   event.respondWith(
     caches.match(request).then((response) => {
