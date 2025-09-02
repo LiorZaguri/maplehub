@@ -4,12 +4,16 @@
     <meta charset="utf-8">
     <title>MapleHub - Redirecting...</title>
     <script>
-        // Simple redirect to home page
-        window.location.replace('/');
+        // Simple redirect to home page with base path
+        if (location.hostname.includes('github.io')) {
+            window.location.replace('/maplehub/');
+        } else {
+            window.location.replace('/');
+        }
     </script>
 </head>
 <body>
     <p>Redirecting to MapleHub...</p>
-    <p><a href="/">Click here if not redirected automatically</a></p>
+    <p><a href="/maplehub/">Click here if not redirected automatically</a></p>
 </body>
 </html>
