@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import Layout from "@/components/Layout";
 
 // Lazy load pages for better code splitting
@@ -30,11 +30,27 @@ const queryClient = new QueryClient({
   },
 });
 
+// GitHub Pages redirect handler
+const GitHubPagesRedirect = () => {
+  useEffect(() => {
+    // Check if we're on GitHub Pages and need to redirect
+    if (window.location.search.includes('?/')) {
+      const redirect = window.location.search.replace('?/', '');
+      if (redirect) {
+        window.history.replaceState(null, '', redirect);
+      }
+    }
+  }, []);
+  
+  return null;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <GitHubPagesRedirect />
       <BrowserRouter>
         <Suspense fallback={<PageLoader />}>
           <Routes>
