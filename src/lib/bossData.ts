@@ -1,5 +1,6 @@
 // Structured boss data
 import { bosses, type BossEntry } from '@/data/bosses';
+import { getAssetUrl } from '@/lib/utils';
 
 export type BossMeta = BossEntry;
 
@@ -25,6 +26,15 @@ export function listAllBosses(): BossMeta[] {
     cachedBossList = Array.from(configMap.values());
   }
   return cachedBossList;
+}
+
+// Get boss image URL with proper base path
+export function getBossImageUrl(bossName: string): string {
+  const boss = getBossMeta(bossName);
+  if (boss) {
+    return getAssetUrl(boss.imageUrl);
+  }
+  return getAssetUrl('bosses/placeholder.png');
 }
 
 
