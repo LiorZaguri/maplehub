@@ -154,21 +154,21 @@ const TaskTracker = () => {
   return (
     <Layout>
       <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+          <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
             Task Tracker
           </h1>
           <p className="text-muted-foreground mt-1">
             Manage daily, weekly, and monthly tasks for all characters
           </p>
         </div>
-        <div className="flex space-x-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <Button
             onClick={() => resetTasks('daily')}
             variant="outline"
             size="sm"
-            className="text-muted-foreground hover:text-primary"
+            className="text-muted-foreground hover:text-primary w-full sm:w-auto"
           >
             <RotateCcw className="h-4 w-4 mr-2" />
             Reset Daily
@@ -177,7 +177,7 @@ const TaskTracker = () => {
             onClick={() => resetTasks('weekly')}
             variant="outline"
             size="sm"
-            className="text-muted-foreground hover:text-primary"
+            className="text-muted-foreground hover:text-primary w-full sm:w-auto"
           >
             <RotateCcw className="h-4 w-4 mr-2" />
             Reset Weekly
@@ -185,7 +185,7 @@ const TaskTracker = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         <Card className="card-glow">
           <CardContent className="pt-6">
             <div className="flex items-center space-x-2">

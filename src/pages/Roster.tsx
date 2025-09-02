@@ -4,14 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from '@/components/ui/table';
+
 import { Plus, RefreshCw, User, Clock, Pencil, ArrowUp, ArrowDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -23,6 +16,7 @@ import { Input as UiInput } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getLevelProgress } from '@/lib/levels';
+import CharacterCard from '@/components/CharacterCard';
 
 interface Character {
   id: string;
@@ -511,9 +505,9 @@ const Roster = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+          <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
             Character Roster
           </h1>
           <p className="text-muted-foreground mt-1">
@@ -523,7 +517,7 @@ const Roster = () => {
         <Button
           onClick={handleRefreshAll}
           disabled={isLoading}
-          className="btn-accent"
+          className="btn-accent w-full sm:w-auto"
         >
           <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
           Refresh All
@@ -538,17 +532,18 @@ const Roster = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex space-x-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <Input
               placeholder="Enter character name"
               value={newCharacterName}
               onChange={(e) => setNewCharacterName(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleAddCharacter()}
+              className="flex-1"
             />
             <Button 
               onClick={handleAddCharacter} 
               disabled={isLoading}
-              className="btn-hero"
+              className="btn-hero w-full sm:w-auto"
             >
               {isLoading ? (
                 <RefreshCw className="h-4 w-4 animate-spin" />
@@ -559,16 +554,18 @@ const Roster = () => {
           </div>
           <div className="mt-3">
             <label className="text-sm text-muted-foreground">Bulk add (comma or newline separated)</label>
-            <div className="flex space-x-2 mt-1">
+            <div className="flex flex-col sm:flex-row gap-2 mt-1">
               <Input
                 placeholder="Enter multiple character names"
                 value={bulkNamesInput}
                 onChange={(e) => setBulkNamesInput(e.target.value)}
+                className="flex-1"
               />
               <Button
                 onClick={handleBulkAdd}
                 disabled={isLoading}
                 variant="outline"
+                className="w-full sm:w-auto"
               >Add Bulk</Button>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
@@ -581,7 +578,7 @@ const Roster = () => {
       </Card>
 
       <Dialog open={isBossDialogOpen} onOpenChange={setIsBossDialogOpen}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-4xl w-[95vw] max-h-[90vh] overflow-hidden">
           <DialogHeader>
             <DialogTitle>
               {pendingBulkNames && pendingBulkNames.length > 1
@@ -616,7 +613,7 @@ const Roster = () => {
               </div>
             </div>
 
-            <ScrollArea className="h-[70vh] rounded border p-2" style={{ border: '0' }}>
+            <ScrollArea className="h-[60vh] sm:h-[70vh] rounded border p-2" style={{ border: '0' }}>
               <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
                 <TabsList className="grid grid-cols-3 mb-3 w-full">
                   <TabsTrigger value="monthly">Monthly</TabsTrigger>
@@ -626,7 +623,7 @@ const Roster = () => {
                 {([['monthly', groupedMonthly], ['weekly', groupedWeekly], ['daily', groupedDaily]] as const).map(([key, data]) => (
                   <TabsContent key={key} value={key} className="m-0">
                     <div className="px-3">
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2">
+                      <div className="hidden sm:flex items-center gap-3 text-xs text-muted-foreground mb-2">
                         <div className="w-4" />
                         <div className="w-7" />
                         <div className="w-40">Boss</div>
@@ -635,16 +632,18 @@ const Roster = () => {
                         <div className="w-40 text-right">Est. Mesos</div>
                       </div>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-1 gap-3">
+                    <div className="grid grid-cols-1 gap-3">
                       {data.map(([base, variants]) => (
                         <div key={base} className="rounded border p-3">
-                          <div className="flex items-center gap-3">
-                            <Checkbox
-                              checked={!!baseEnabledByBase[makeGroupKey(key, base)]}
-                              onCheckedChange={() => setBaseEnabledByBase(prev => ({ ...prev, [makeGroupKey(key, base)]: !prev[makeGroupKey(key, base)] }))}
-                            />
-                            <img src={variants[0].imageUrl} alt={base} className="h-7 w-7 rounded-sm" onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/placeholder.svg'; }} />
-                            <div className="text-sm font-semibold text-primary w-40 truncate">{base}</div>
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                            <div className="flex items-center gap-3">
+                              <Checkbox
+                                checked={!!baseEnabledByBase[makeGroupKey(key, base)]}
+                                onCheckedChange={() => setBaseEnabledByBase(prev => ({ ...prev, [makeGroupKey(key, base)]: !prev[makeGroupKey(key, base)] }))}
+                              />
+                              <img src={variants[0].imageUrl} alt={base} className="h-7 w-7 rounded-sm" onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/placeholder.svg'; }} />
+                              <div className="text-sm font-semibold text-primary flex-1 sm:w-40 truncate">{base}</div>
+                            </div>
                             <div className="flex items-center gap-2 flex-wrap">
                               {variants.map(v => {
                                 const selected = (selectedVariantByBase[makeGroupKey(key, base)] || variants[0]?.name) === v.name;
@@ -661,7 +660,7 @@ const Roster = () => {
                                 );
                               })}
                             </div>
-                            <div className="flex items-center gap-1 text-xs ml-auto">
+                            <div className="flex items-center gap-1 text-xs sm:ml-auto">
                               {(() => {
                                 const selName = selectedVariantByBase[makeGroupKey(key, base)] || variants[0]?.name || '';
                                 return (
@@ -680,7 +679,7 @@ const Roster = () => {
                               })()}
                               <span>/6</span>
                             </div>
-                            <div className="text-xs text-muted-foreground w-40 text-right">
+                            <div className="text-xs text-muted-foreground flex-1 sm:w-40 text-right">
                               {(() => {
                                 const selName = selectedVariantByBase[makeGroupKey(key, base)] || variants[0]?.name;
                                 const variant = variants.find(v => v.name === selName) || variants[0];
@@ -751,84 +750,21 @@ const Roster = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead></TableHead>
-                <TableHead>Character</TableHead>
-                <TableHead>Class</TableHead>
-                <TableHead>Level</TableHead>
-                <TableHead>Server</TableHead>
-                <TableHead>Last Updated</TableHead>
-                <TableHead className="w-20">Order</TableHead>
-                <TableHead className="w-12">Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {characters.map((character, idx) => (
-                <TableRow key={character.id} className="hover:bg-muted/50">
-                  <TableCell className="font-medium">
-                    <div className="flex items-center">
-                      <img
-                        src={(character.avatarUrl || '')}
-                        alt={character.name}
-                        className="h-10 w-auto rounded-none"
-                        onError={(e) => { const img = e.currentTarget as HTMLImageElement; img.src = '/placeholder.svg'; }}
-                      />
-                    </div>
-                  </TableCell>
-                  <TableCell className="font-medium text-primary">
-                    <div className="flex items-center">
-                      <span>{character.name}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">{character.class}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <span className="level-badge">{character.level} • {getLevelProgress(character.level, character.exp || 0)}%</span>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={character.reboot ? "default" : "outline"}>
-                      {character.reboot ? 'Reboot' : 'Regular'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    <div className="flex items-center space-x-1">
-                      <Clock className="h-3 w-3" />
-                      <span>{character.lastUpdated}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="icon" onClick={() => moveCharacter(idx, -1)} title="Move up"><ArrowUp className="h-4 w-4" /></Button>
-                      <Button variant="ghost" size="icon" onClick={() => moveCharacter(idx, 1)} title="Move down"><ArrowDown className="h-4 w-4" /></Button>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        title="Edit bosses"
-                        onClick={() => openBossEditor(character.name)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setCharacters(prev => prev.filter(c => c.id !== character.id))}
-                        title="Remove character"
-                      >
-                        ✕
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          {/* Character Cards - Responsive Grid Layout */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+            {characters.map((character, idx) => (
+              <CharacterCard
+                key={character.id}
+                character={character}
+                variant="roster"
+                index={idx}
+                onMoveUp={() => moveCharacter(idx, -1)}
+                onMoveDown={() => moveCharacter(idx, 1)}
+                onEditBosses={() => openBossEditor(character.name)}
+                onRemove={() => setCharacters(prev => prev.filter(c => c.id !== character.id))}
+              />
+            ))}
+          </div>
         </CardContent>
       </Card>
 

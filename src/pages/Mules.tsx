@@ -145,9 +145,9 @@ const Mules = () => {
   return (
     <Layout>
       <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+          <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
             Mules Management
           </h1>
           <p className="text-muted-foreground mt-1">
@@ -156,7 +156,7 @@ const Mules = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         <Card className="card-glow">
           <CardContent className="pt-6">
             <div className="flex items-center space-x-2">
@@ -214,7 +214,7 @@ const Mules = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
             <Input
               placeholder="Character name"
               value={newMule.name}
@@ -272,54 +272,95 @@ const Mules = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Character Name</TableHead>
-                <TableHead>Class</TableHead>
-                <TableHead>Level</TableHead>
-                <TableHead>Purpose</TableHead>
-                <TableHead>Daily Mesos</TableHead>
-                <TableHead>Weekly Mesos</TableHead>
-                <TableHead>Server</TableHead>
-                <TableHead>Last Played</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {mules.map((mule) => (
-                <TableRow key={mule.id} className="hover:bg-muted/50">
-                  <TableCell className="font-medium text-primary">
-                    {mule.name}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">{mule.class}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <span className="level-badge">{mule.level}</span>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={getPurposeBadgeColor(mule.purpose)}>
-                      {mule.purpose}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="font-mono text-accent">
-                    {formatMesos(mule.dailyMesos)}
-                  </TableCell>
-                  <TableCell className="font-mono text-success">
-                    {formatMesos(mule.weeklyMesos)}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={mule.server === 'Reboot' ? "default" : "outline"}>
-                      {mule.server}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {mule.lastPlayed}
-                  </TableCell>
+          {/* Desktop Table */}
+          <div className="hidden lg:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Character Name</TableHead>
+                  <TableHead>Class</TableHead>
+                  <TableHead>Level</TableHead>
+                  <TableHead>Purpose</TableHead>
+                  <TableHead>Daily Mesos</TableHead>
+                  <TableHead>Weekly Mesos</TableHead>
+                  <TableHead>Server</TableHead>
+                  <TableHead>Last Played</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {mules.map((mule) => (
+                  <TableRow key={mule.id} className="hover:bg-muted/50">
+                    <TableCell className="font-medium text-primary">
+                      {mule.name}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">{mule.class}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <span className="level-badge">{mule.level}</span>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={getPurposeBadgeColor(mule.purpose)}>
+                        {mule.purpose}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="font-mono text-accent">
+                      {formatMesos(mule.dailyMesos)}
+                    </TableCell>
+                    <TableCell className="font-mono text-success">
+                      {formatMesos(mule.weeklyMesos)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={mule.server === 'Reboot' ? "default" : "outline"}>
+                        {mule.server}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {mule.lastPlayed}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Mobile Cards */}
+          <div className="lg:hidden space-y-3">
+            {mules.map((mule) => (
+              <div key={mule.id} className="border rounded-lg p-3 space-y-3 hover:bg-muted/50">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-medium text-primary text-lg">{mule.name}</h3>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge variant="secondary" className="text-xs">{mule.class}</Badge>
+                      <span className="level-badge text-xs">{mule.level}</span>
+                    </div>
+                  </div>
+                  <Badge className={getPurposeBadgeColor(mule.purpose)}>
+                    {mule.purpose}
+                  </Badge>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Daily:</span>
+                    <span className="font-mono text-accent ml-2">{formatMesos(mule.dailyMesos)}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Weekly:</span>
+                    <span className="font-mono text-success ml-2">{formatMesos(mule.weeklyMesos)}</span>
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between text-xs">
+                  <Badge variant={mule.server === 'Reboot' ? "default" : "outline"}>
+                    {mule.server}
+                  </Badge>
+                  <span className="text-muted-foreground">Last: {mule.lastPlayed}</span>
+                </div>
+              </div>
+            ))}
+          </div>
         </CardContent>
       </Card>
 

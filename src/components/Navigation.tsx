@@ -59,23 +59,23 @@ const Navigation = () => {
   return (
     <>
       {/* Desktop Navigation */}
-      <nav className="hidden md:block w-64 min-h-screen card-gaming">
+      <nav className="hidden md:block w-64 min-h-screen card-gaming fixed left-0 top-0 z-40">
         <NavContent />
       </nav>
 
       {/* Mobile Navigation */}
-      <div className="md:hidden">
-        <div className="flex items-center justify-between p-4 bg-card border-b border-border">
+      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-card border-b border-border h-20">
+        <div className="flex items-center justify-between p-3 sm:p-4 h-full">
           <div className="flex items-center space-x-2">
-            <TrendingUp className="h-6 w-6 text-primary" />
-            <h1 className="text-lg font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+            <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+            <h1 className="text-base sm:text-lg font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
               MapleHub
             </h1>
           </div>
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="sm">
-                <Menu className="h-5 w-5" />
+              <Button variant="ghost" size="sm" className="p-2">
+                <Menu className="h-4 w-4 sm:h-5 sm:w-5" />
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-64 p-0 bg-card">

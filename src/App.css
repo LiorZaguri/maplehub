@@ -1,8 +1,21 @@
 #root {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 1rem;
   text-align: center;
+}
+
+@media (max-width: 640px) {
+  #root {
+    max-width: 100%;
+    padding: 0.5rem;
+  }
+}
+
+@media (min-width: 640px) {
+  #root {
+    padding: 2rem;
+  }
 }
 
 .logo {
@@ -39,4 +52,90 @@
 
 .read-the-docs {
   color: #888;
+}
+
+/* Mobile-specific improvements */
+@media (max-width: 640px) {
+  .card {
+    padding: 1em;
+  }
+  
+  /* Ensure buttons are properly sized on mobile */
+  button {
+    min-height: 44px;
+  }
+  
+  /* Improve touch targets */
+  .btn-hero, .btn-accent, .btn-secondary {
+    min-height: 44px;
+    padding: 0.75rem 1rem;
+  }
+  
+  /* Better spacing for mobile cards */
+  .card-gaming, .card-glow {
+    margin: 0.5rem 0;
+  }
+  
+  /* Improve table responsiveness */
+  table {
+    font-size: 0.875rem;
+  }
+  
+  /* Better mobile navigation */
+  .sheet-content {
+    width: 100vw !important;
+    max-width: 320px;
+  }
+}
+
+/* Layout fixes for navigation */
+@media (min-width: 768px) {
+  /* Ensure desktop sidebar doesn't interfere with content */
+  main {
+    margin-left: 16rem; /* 256px = 16rem */
+  }
+}
+
+@media (max-width: 767px) {
+  /* Ensure mobile header doesn't interfere with content */
+  main {
+    margin-top: 5rem; /* 80px = 5rem (pt-20) */
+  }
+  
+  /* Prevent horizontal scrolling on mobile */
+  body {
+    overflow-x: hidden;
+  }
+  
+  /* Ensure content fits within viewport */
+  .space-y-6 > * {
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+  
+  /* Additional mobile layout fixes */
+  .min-h-screen {
+    min-height: 100vh;
+    padding-top: 5rem; /* Ensure content starts below header */
+  }
+  
+  /* Ensure navigation doesn't hide content */
+  nav.fixed {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+  }
+  
+  /* Force proper spacing for mobile header */
+  .bg-background {
+    padding-top: 5rem !important;
+  }
+  
+  /* Ensure main content is never hidden */
+  main {
+    position: relative;
+    z-index: 10;
+  }
 }

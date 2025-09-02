@@ -80,15 +80,15 @@ const VITracker = () => {
   return (
     <Layout>
       <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+          <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
             VI (5th Job) Tracker
           </h1>
           <p className="text-muted-foreground mt-1">
             Track 5th job node progress and weapon enhancement for Heroic class
           </p>
-          <div className="flex items-center space-x-2 mt-2">
+          <div className="flex flex-wrap items-center gap-2 mt-2">
             <Badge variant="secondary">{characterData.name}</Badge>
             <Badge className="level-badge">Level {characterData.level}</Badge>
             <Badge variant="outline">{characterData.class}</Badge>
@@ -156,44 +156,71 @@ const VITracker = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Node Name</TableHead>
-                <TableHead>Level</TableHead>
-                <TableHead>Experience</TableHead>
-                <TableHead>Progress</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {characterData.viNodes.map((node, index) => (
-                <TableRow key={index} className="hover:bg-muted/50">
-                  <TableCell className="font-medium text-primary">
-                    {node.name}
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={getNodeLevelColor(node.level, node.maxLevel)}>
-                      {node.level}/{node.maxLevel}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {node.level === node.maxLevel ? 'MAX' : `${node.exp}/${node.maxExp}`}
-                  </TableCell>
-                  <TableCell className="w-32">
-                    <div className="flex items-center space-x-2">
-                      <Progress 
-                        value={getNodeProgress(node)} 
-                        className="flex-1 h-2"
-                      />
-                      <span className="text-xs text-muted-foreground w-12">
-                        {Math.round(getNodeProgress(node))}%
-                      </span>
-                    </div>
-                  </TableCell>
+          {/* Desktop Table */}
+          <div className="hidden sm:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Node Name</TableHead>
+                  <TableHead>Level</TableHead>
+                  <TableHead>Experience</TableHead>
+                  <TableHead>Progress</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {characterData.viNodes.map((node, index) => (
+                  <TableRow key={index} className="hover:bg-muted/50">
+                    <TableCell className="font-medium text-primary">
+                      {node.name}
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={getNodeLevelColor(node.level, node.maxLevel)}>
+                        {node.level}/{node.maxLevel}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {node.level === node.maxLevel ? 'MAX' : `${node.exp}/${node.maxExp}`}
+                    </TableCell>
+                    <TableCell className="w-32">
+                      <div className="flex items-center space-x-2">
+                        <Progress 
+                          value={getNodeProgress(node)} 
+                          className="flex-1 h-2"
+                        />
+                        <span className="text-xs text-muted-foreground w-12">
+                          {Math.round(getNodeProgress(node))}%
+                        </span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Mobile Cards */}
+          <div className="sm:hidden space-y-3">
+            {characterData.viNodes.map((node, index) => (
+              <div key={index} className="border rounded-lg p-3 space-y-2 hover:bg-muted/50">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-medium text-primary text-sm">{node.name}</h3>
+                  <Badge className={getNodeLevelColor(node.level, node.maxLevel)}>
+                    {node.level}/{node.maxLevel}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>
+                    {node.level === node.maxLevel ? 'MAX' : `${node.exp}/${node.maxExp}`}
+                  </span>
+                  <span>{Math.round(getNodeProgress(node))}%</span>
+                </div>
+                <Progress 
+                  value={getNodeProgress(node)} 
+                  className="h-2"
+                />
+              </div>
+            ))}
+          </div>
         </CardContent>
       </Card>
 
@@ -216,13 +243,13 @@ const VITracker = () => {
               </Badge>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
               <Card className="card-glow">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm text-muted-foreground">Potential</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="font-medium text-primary">{characterData.weapon.potential}</p>
+                  <p className="font-medium text-primary text-sm sm:text-base">{characterData.weapon.potential}</p>
                 </CardContent>
               </Card>
 
@@ -231,7 +258,7 @@ const VITracker = () => {
                   <CardTitle className="text-sm text-muted-foreground">Bonus Potential</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="font-medium text-secondary">{characterData.weapon.bonus}</p>
+                  <p className="font-medium text-secondary text-sm sm:text-base">{characterData.weapon.bonus}</p>
                 </CardContent>
               </Card>
 
@@ -240,7 +267,7 @@ const VITracker = () => {
                   <CardTitle className="text-sm text-muted-foreground">Flame</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="font-medium text-accent">{characterData.weapon.flame}</p>
+                  <p className="font-medium text-accent text-sm sm:text-base">{characterData.weapon.flame}</p>
                 </CardContent>
               </Card>
             </div>
