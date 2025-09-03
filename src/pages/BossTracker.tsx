@@ -463,6 +463,7 @@ const BossTracker = () => {
             const visibleBosses = bosses.filter((b) => isBossEnabledForCharacter(c.name, b.name));
             const allChecked = visibleBosses.length > 0 && visibleBosses.every(b => (progressByCharacter[c.name] || {})[b.name]);
 
+            
             return (
               <div key={c.id} className="space-y-3">
                 <CharacterCard
@@ -483,6 +484,7 @@ const BossTracker = () => {
                 
                 {/* Boss list content below the card */}
                 <Card className="card-gaming">
+                  
                   <CardContent className="p-3">
                     <div className="overflow-x-hidden">
                       {/* Desktop Table */}
@@ -497,8 +499,12 @@ const BossTracker = () => {
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {visibleBosses
-                              .sort((a, z) => z.value - a.value)
+                          {[...visibleBosses]
+                          .sort((a, b) => {
+                            const aVal = Math.floor(a.value / getPartySize(c.name, a.name));
+                            const bVal = Math.floor(b.value / getPartySize(c.name, b.name));
+                            return bVal - aVal || a.name.localeCompare(b.name); // tie-break by name
+                          })
                               .map((b) => {
                               const meta = getBossMeta(b.name);
                               return (
@@ -547,11 +553,15 @@ const BossTracker = () => {
                           </TableBody>
                         </Table>
                       </div>
-
+                          
                       {/* Mobile Cards */}
                       <div className="sm:hidden space-y-2">
-                        {visibleBosses
-                          .sort((a, z) => z.value - a.value)
+                        {[...visibleBosses]
+                          .sort((a, b) => {
+                            const aVal = Math.floor(a.value / getPartySize(c.name, a.name));
+                            const bVal = Math.floor(b.value / getPartySize(c.name, b.name));
+                            return bVal - aVal || a.name.localeCompare(b.name); // tie-break by name
+                          })
                           .map((b) => {
                           const meta = getBossMeta(b.name);
                           return (
@@ -563,6 +573,7 @@ const BossTracker = () => {
                                   onCheckedChange={() => toggleBossComplete(c.name, b.name)}
                                   className="h-4 w-4 data-[state=checked]:bg-success data-[state=checked]:border-success"
                                 />
+                                
                                 <div className="flex items-center gap-1 min-w-0 flex-1">
                                   {SHOW_BOSS_ICONS && meta?.imageUrl && (
                                     <img

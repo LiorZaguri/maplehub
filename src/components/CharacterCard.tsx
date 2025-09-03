@@ -130,7 +130,7 @@ const CharacterCard: React.FC<CharacterCardProps> = ({
                         </DropdownMenuItem>
                         {onEditBosses && (
                           <DropdownMenuItem onClick={() => onEditBosses(character.name)}>
-                            <Pencil className="h-4 w-4 mr-2" /> Edit bosses (Roster)
+                            <Pencil className="h-4 w-4 mr-2" /> Edit bosses
                           </DropdownMenuItem>
                         )}
                       </DropdownMenuContent>

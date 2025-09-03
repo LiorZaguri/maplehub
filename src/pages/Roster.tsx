@@ -237,16 +237,22 @@ const Roster = () => {
   });
 
   useEffect(() => {
-    // If navigated with /?edit=CharacterName or /?editBosses=CharacterName, open the boss editor for that character
-    const params = new URLSearchParams(window.location.search);
-    const target = params.get('edit') || params.get('editBosses');
-    if (target && characters.some(c => c.name.toLowerCase() === target.toLowerCase())) {
-      const characterName = characters.find(c => c.name.toLowerCase() === target.toLowerCase())!.name;
-      openBossEditor(characterName);
-      // Clear the URL parameter after opening the dialog
-      setSearchParams({});
-    }
-  }, [characters, setSearchParams]);
+    const norm = (s: string) => s.normalize("NFKC").trim().toLowerCase();
+  
+    const target = searchParams.get("edit") ?? searchParams.get("editBosses");
+    if (!target || characters.length === 0) return;
+  
+    const match = characters.find(c => norm(c.name) === norm(target));
+    if (!match) return;
+  
+    openBossEditor(match.name); // open the dialog
+  
+    // clear only the edit params, and don't push a new history entry
+    const next = new URLSearchParams(searchParams);
+    next.delete("edit");
+    next.delete("editBosses");
+    setSearchParams(next, { replace: true });
+  }, [searchParams, characters]); // <- depend on searchParams, not window/setter
 
   const getJobName = (jobID: number, jobDetail: number): string => {
     // Prefer specific class names by jobDetail when available
@@ -923,7 +929,8 @@ const Roster = () => {
           </CardContent>
         ) : (
           <CardContent className="text-sm text-gray-400">
-            No main character set.
+            No main character detected.
+            <p className='text-xs'>We auto-detect the main character as the highest-level on the account.</p>
           </CardContent>
         )}
       </Card>
