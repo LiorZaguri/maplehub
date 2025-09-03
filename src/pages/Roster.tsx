@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
-import { Plus, RefreshCw, User, Clock, Pencil, ArrowUp, ArrowDown } from 'lucide-react';
+import { Plus, RefreshCw, User, Clock, Pencil, ArrowUp, ArrowDown, Trophy } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { listAllBosses } from '@/lib/bossData';
@@ -27,6 +27,9 @@ interface Character {
   reboot: boolean;
   lastUpdated: string;
   avatarUrl?: string;
+  isMain: boolean;
+  legionLevel?: number;
+  raidPower?: number;
 }
 
 const Roster = () => {
@@ -70,11 +73,11 @@ const Roster = () => {
 
   const handleBulkAdd = async () => {
     const names = Array.from(new Set(bulkNamesInput
-      .split(/\n|,/)
+      .split(/(?:,|\s|&nbsp;|\u00A0)+/)
       .map(n => n.trim())
       .filter(Boolean)));
     if (names.length === 0) {
-      toast({ title: 'Error', description: 'Enter one or more character names (comma or newline separated)', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Enter one or more character names (comma or space separated)', variant: 'destructive' });
       return;
     }
     setIsLoading(true);
@@ -382,7 +385,10 @@ const Roster = () => {
         level: data.level,
         reboot: true, // Using reboot_index=1 in API call
         avatarUrl: data.characterImgURL as string | undefined,
-        exp: data.exp
+        exp: data.exp,
+        isMain: data.isMain,
+        legionLevel: data.legionLevel,
+        raidPower: data.raidPower
       };
     } catch (error) {
       throw new Error('Failed to fetch character data from Nexon API');
@@ -455,6 +461,17 @@ const Roster = () => {
     }
   };
 
+  const [mainLegion, setMainLegion] = useState<number | null>(null);
+  const [mainRaidPower, setMainRaidPower] = useState<number | null>(null);
+  const [mainCharacter, setMainCharacter] = useState<Character | null>(null);
+
+  useEffect(() => {
+    const main = characters.find(c => !!c.isMain) ?? null;
+    setMainCharacter(main);
+    setMainLegion(main?.legionLevel ?? null);
+    setMainRaidPower(main?.raidPower ?? null);
+  }, [characters]);
+  
   const handleRefreshAll = async () => {
     setIsLoading(true);
     toast({
@@ -462,26 +479,46 @@ const Roster = () => {
       description: "Updating all character information...",
       className: "progress-partial"
     });
-
+  
     try {
-      const updates = await Promise.all(characters.map(async (char) => {
-        try {
-          const data = await fetchCharacterData(char.name);
-          return {
-            ...char,
-            name: data.name,
-            class: data.class,
-            level: data.level,
-            reboot: char.reboot,
-            avatarUrl: data.avatarUrl || char.avatarUrl,
-            exp: data.exp || char.exp,
-            lastUpdated: new Date().toLocaleString()
-          } as Character;
-        } catch {
-          return { ...char, lastUpdated: new Date().toLocaleString() } as Character;
-        }
-      }));
+      const updates = await Promise.all(
+        characters.map(async (char) => {
+          try {
+            const data = await fetchCharacterData(char.name);
+            return {
+              ...char,
+              name: data.name ?? char.name,
+              class: data.class ?? char.class,
+              level: data.level ?? char.level,
+              reboot: char.reboot,
+              avatarUrl: data.avatarUrl ?? char.avatarUrl,
+              exp: data.exp ?? char.exp,
+              lastUpdated: new Date().toLocaleString(),
+  
+              // fresh main/legion fields
+              isMain: data.isMain ?? char.isMain,
+              legionLevel: data.legionLevel ?? char.legionLevel,
+              raidPower: data.raidPower ?? char.raidPower,
+            } as Character;
+          } catch {
+            return { ...char, lastUpdated: new Date().toLocaleString() } as Character;
+          }
+        })
+      );
+  
       setCharacters(updates);
+
+      const main = updates.find(c => c.isMain);
+      if (main) {
+        setMainCharacter(main);
+        setMainLegion(main.legionLevel ?? null);
+        setMainRaidPower(main.raidPower ?? null);
+      } else {
+        setMainCharacter(null);
+        setMainLegion(null);
+        setMainRaidPower(null);
+      }
+  
       toast({
         title: "Data Updated",
         description: "All character data has been refreshed!",
@@ -533,15 +570,14 @@ const Roster = () => {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-2">
-            <Input
-              placeholder="Enter character name"
-              value={newCharacterName}
-              onChange={(e) => setNewCharacterName(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleAddCharacter()}
-              className="flex-1"
-            />
+          <Input
+                placeholder="Enter character name(s)"
+                value={bulkNamesInput}
+                onChange={(e) => setBulkNamesInput(e.target.value)}
+                className="flex-1"
+              />
             <Button 
-              onClick={handleAddCharacter} 
+              onClick={handleBulkAdd} 
               disabled={isLoading}
               className="btn-hero w-full sm:w-auto"
             >
@@ -552,31 +588,15 @@ const Roster = () => {
               )}
             </Button>
           </div>
-          <div className="mt-3">
-            <label className="text-sm text-muted-foreground">Bulk add (comma or newline separated)</label>
-            <div className="flex flex-col sm:flex-row gap-2 mt-1">
-              <Input
-                placeholder="Enter multiple character names"
-                value={bulkNamesInput}
-                onChange={(e) => setBulkNamesInput(e.target.value)}
-                className="flex-1"
-              />
-              <Button
-                onClick={handleBulkAdd}
-                disabled={isLoading}
-                variant="outline"
-                className="w-full sm:w-auto"
-              >Add Bulk</Button>
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Advanced: Use Bulk Add to add several characters at once. After adding,
-              you will choose bosses one time and the same selections (including party sizes)
-              will be applied to all newly added characters.
-            </p>
-          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+              Advanced: To add multiple characters at once, you can enter their names separated by commas or spaces.
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Example: "Hikma, Mirae, Sancta, Ghost"
+          </p>
         </CardContent>
       </Card>
-
+      
       <Dialog open={isBossDialogOpen} onOpenChange={setIsBossDialogOpen}>
         <DialogContent className="max-w-4xl w-[95vw] max-h-[90vh] overflow-hidden">
           <DialogHeader>
@@ -741,7 +761,49 @@ const Roster = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <Card className="card-gaming">
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+          <Trophy className="h-5 w-5 text-amber-400" aria-hidden="true" />
+            <span>Main Character</span>
+          </CardTitle>
+        </CardHeader>
 
+        {mainCharacter ? (
+          <CardContent className="flex items-center space-x-4">
+            {/* Avatar */}
+            <img
+              src={mainCharacter.avatarUrl}
+              alt={mainCharacter.name}
+              className="w-16 h-16 rounded-md border border-gray-700"
+            />
+
+            <div className="flex flex-col">
+              {/* Name + Level/Class */}
+              <span className="font-semibold text-lg text-white">
+                {mainCharacter.name}
+              </span>
+              <span className="text-sm text-gray-400">
+                Lv. {mainCharacter.level} — {mainCharacter.class}
+              </span>
+
+              {/* Legion / RaidPower badges */}
+              <div className="mt-2 flex space-x-2">
+                <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-md">
+                  Legion: {mainLegion?.toLocaleString() ?? "N/A"}
+                </span>
+                <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-md">
+                  Raid Power: {mainRaidPower?.toLocaleString() ?? "N/A"}
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        ) : (
+          <CardContent className="text-sm text-gray-400">
+            No main character set.
+          </CardContent>
+        )}
+      </Card>
       <Card className="card-gaming">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">

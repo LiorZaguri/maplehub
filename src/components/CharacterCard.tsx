@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowUp, ArrowDown, Pencil, MoreVertical, CheckSquare, XCircle } from 'lucide-react';
 import { getLevelProgress } from '@/lib/levels';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Star } from "lucide-react";
 
 interface CharacterCardProps {
   character: {
@@ -13,6 +14,9 @@ interface CharacterCardProps {
     level: number;
     exp: number;
     avatarUrl?: string;
+    isMain?: boolean;
+    legionLevel?: number;
+    raidPower?: number;
   };
   variant: 'roster' | 'boss-tracker';
   index?: number;
@@ -47,9 +51,14 @@ const CharacterCard: React.FC<CharacterCardProps> = ({
 
   return (
     <div className="border rounded-lg overflow-hidden hover:bg-muted/50 transition-colors">
+      
       <div className="flex h-4/6">
         {/* Character Image - Left Side (80% height) */}
+        
+
+        
         <div className="flex-shrink-0 h-4/5">
+        
           <img
             src={character.avatarUrl || ''}
             alt={character.name}
@@ -67,19 +76,29 @@ const CharacterCard: React.FC<CharacterCardProps> = ({
           <div className="min-w-0 space-y-1">
             <div className="flex items-start justify-between">
               <div className="min-w-0 flex-1">
-                <h3 className="font-medium text-primary text-base truncate">{character.name}</h3>
+              <h3 className="font-medium text-primary text-base flex items-center gap-1">
+                <span className="truncate">{character.name}</span>
+                {character.isMain && variant === "boss-tracker" && (
+                  <span className="text-amber-400 shrink-0" aria-label="Main" title="Main">★</span>
+                )}
+              </h3>
+                
                 <div className="text-sm text-muted-foreground">
                   Lv. {character.level} ({pct}%)
                 </div>
+                
                 <div className="text-sm text-muted-foreground">{character.class}</div>
               </div>
               
               {/* Completion badge for boss tracker */}
               {variant === 'boss-tracker' && completionStats && (
+                
                 <div className="flex items-center gap-2 ml-2">
+                  
                   <Badge className={completionStats.percentage === 100 ? 'progress-complete' : 'progress-partial'}>
                     {completionStats.completed}/{completionStats.total}
                   </Badge>
+                  
                   {onToggleAllBosses && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -114,6 +133,7 @@ const CharacterCard: React.FC<CharacterCardProps> = ({
                   )}
                 </div>
               )}
+              
             </div>
             
           </div>
@@ -122,9 +142,11 @@ const CharacterCard: React.FC<CharacterCardProps> = ({
             
         </div>
         
+        
       </div>
       {variant === 'roster' ? (
             <div className="pr-3 pl-3 flex items-center gap-2 pt-1 mt-auto">
+              
               <Button
                 variant="ghost"
                 size="sm"
@@ -166,6 +188,7 @@ const CharacterCard: React.FC<CharacterCardProps> = ({
           ) : (
             // Boss tracker variant - no action buttons needed
             <div className="pt-2 mt-auto">
+              
               {/* Content will be added by the parent component */}
             </div>
           )}

@@ -29,6 +29,9 @@ interface RosterCharacter {
   level: number;
   exp: number;
   avatarUrl?: string;
+  isMain: boolean;
+  legionLevel?: number;
+  raidPower?: number;
 }
 
 interface BossInfo {
@@ -117,7 +120,17 @@ const BossTracker = () => {
       const stored = localStorage.getItem('maplehub_roster');
       if (!stored) return [];
       const parsed = JSON.parse(stored) as Array<any>;
-      return parsed.map((c) => ({ id: c.id, name: c.name, class: c.class, level: c.level, avatarUrl: c.avatarUrl, exp: c.exp }));
+      return parsed.map((c) => ({ 
+        id: c.id,
+        name: c.name,
+        class: c.class,
+        level: c.level,
+        avatarUrl: c.avatarUrl,
+        exp: c.exp,
+        isMain: c.isMain,
+        raidPower: c.raidPower,
+        legionLevel: c.legionLevel
+      }));
     } catch {
       return [];
     }
@@ -478,7 +491,7 @@ const BossTracker = () => {
                               .map((b) => {
                               const meta = getBossMeta(b.name);
                               return (
-                                <TableRow key={b.name} className={`hover:bg-muted/50 h-7`}>
+                                <TableRow  key={b.name} className={`hover:bg-muted/50 h-7`}>
                                   <TableCell className="p-0">
                                     <Checkbox
                                       checked={(progressByCharacter[c.name] || {})[b.name] || false}
@@ -493,7 +506,7 @@ const BossTracker = () => {
                                         <img
                                           src={meta.imageUrl}
                                           alt={b.name}
-                                          className="h-4 w-4 rounded-sm"
+                                          className="h-5 w-5 rounded-sm"
                                           loading="lazy"
                                           referrerPolicy="no-referrer"
                                           onError={(e) => {
