@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,13 +37,27 @@ interface Character {
   raidPower?: number;
 };
 
+
 const Roster = () => {
   const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const [characters, setCharacters] = useState<Character[]>(() => {
     try {
-      const stored = localStorage.getItem('maplehub_roster');
-      return stored ? (JSON.parse(stored) as Character[]) : [];
+      const stored = JSON.parse(localStorage.getItem("maplehub_roster") || "[]") as Character[];
+      const seen = new Set<string>();
+      const withIds = stored.map((c) => {
+        let id = c.id;
+        if (!id || seen.has(id)) {
+          id = (globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+        }
+        seen.add(id);
+        return { ...c, id };
+      });
+      // Persist back if we added/fixed any ids
+      if (withIds.some((c, i) => c.id !== stored[i]?.id)) {
+        localStorage.setItem("maplehub_roster", JSON.stringify(withIds));
+      }
+      return withIds;
     } catch {
       return [];
     }
@@ -99,7 +113,11 @@ const Roster = () => {
       results.forEach((res) => {
         if (res.status === 'fulfilled') {
           const d = res.value;
-          added.push({ id: `${Date.now()}-${d.name}`, ...d, lastUpdated: new Date().toLocaleString() });
+          added.push({
+            id: (crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`),
+            ...d,
+            lastUpdated: new Date().toISOString(),
+          });
         }
       });
       if (added.length === 0) {
@@ -313,6 +331,32 @@ const Roster = () => {
     return jobMap[jobID] || 'Unknown';
   };
 
+  const didRunRef = useRef(false);
+
+  useEffect(() => {
+    if (didRunRef.current) return;        // guard StrictMode double-run
+    didRunRef.current = true;
+
+    if (!characters.length || isLoading) return;
+
+    const MIN_INTERVAL_MS = 15 * 60 * 1000; // at most every 15 min
+    const STALE_MS = 6 * 60 * 60 * 1000;    // refresh if older than 6h
+
+    const lastAuto = Number(localStorage.getItem("lastAutoRefreshAt") || 0);
+    if (Date.now() - lastAuto < MIN_INTERVAL_MS) return;
+
+    const isStale = characters.some(c => {
+      const t = c.lastUpdated ? Date.parse(c.lastUpdated) : 0;
+      return !t || Date.now() - t > STALE_MS;
+    });
+
+    if (isStale) {
+      handleRefreshAll().finally(() => {
+        localStorage.setItem("lastAutoRefreshAt", String(Date.now()));
+      });
+    }
+  }, [characters, isLoading]);
+
   const openBossEditor = (characterName: string) => {
     try {
       setPendingCharacterName(characterName);
@@ -483,14 +527,23 @@ const Roster = () => {
     toast({
       title: "Refreshing Data",
       description: "Updating all character information...",
-      className: "progress-partial"
+      className: "progress-partial",
     });
   
     try {
-      const updates = await Promise.all(
-        characters.map(async (char) => {
-          try {
+      const BATCH = 5; // adjust as needed
+      const now = new Date().toISOString();
+      const updated: Character[] = [];
+      let failed = 0;
+  
+      for (let i = 0; i < characters.length; i += BATCH) {
+        const batch = characters.slice(i, i + BATCH);
+  
+        const results = await Promise.allSettled(
+          batch.map(async (char) => {
             const data = await fetchCharacterData(char.name);
+            const isMain = data.isMain ?? char.isMain;
+  
             return {
               ...char,
               name: data.name ?? char.name,
@@ -499,36 +552,41 @@ const Roster = () => {
               reboot: char.reboot,
               avatarUrl: data.avatarUrl ?? char.avatarUrl,
               exp: data.exp ?? char.exp,
-              lastUpdated: new Date().toLocaleString(),
+              lastUpdated: now,
   
               // fresh main/legion fields
-              isMain: data.isMain ?? char.isMain,
-              legionLevel: data.legionLevel ?? char.legionLevel,
-              raidPower: data.raidPower ?? char.raidPower,
+              isMain,
+              legionLevel:
+                isMain === false ? null : (data.legionLevel ?? char.legionLevel ?? null),
+              raidPower:
+                isMain === false ? null : (data.raidPower ?? char.raidPower ?? null),
             } as Character;
-          } catch {
-            return { ...char, lastUpdated: new Date().toLocaleString() } as Character;
-          }
-        })
-      );
+          })
+        );
   
-      setCharacters(updates);
-
-      const main = updates.find(c => c.isMain);
-      if (main) {
-        setMainCharacter(main);
-        setMainLegion(main.legionLevel ?? null);
-        setMainRaidPower(main.raidPower ?? null);
-      } else {
-        setMainCharacter(null);
-        setMainLegion(null);
-        setMainRaidPower(null);
+        results.forEach((res, idx) => {
+          if (res.status === "fulfilled") {
+            updated.push(res.value);
+          } else {
+            failed++;
+            updated.push({ ...batch[idx], lastUpdated: now });
+          }
+        });
       }
+  
+      setCharacters(updated);
+  
+      const main = updated.find((c) => c.isMain) ?? null;
+      setMainCharacter(main);
+      setMainLegion(main?.legionLevel ?? null);
+      setMainRaidPower(main?.raidPower ?? null);
   
       toast({
         title: "Data Updated",
-        description: "All character data has been refreshed!",
-        className: "progress-complete"
+        description: failed
+          ? `Updated ${updated.length - failed} character(s); ${failed} failed.`
+          : "All character data has been refreshed!",
+        className: failed ? "progress-warning" : "progress-complete",
       });
     } finally {
       setIsLoading(false);
@@ -819,12 +877,6 @@ const Roster = () => {
                     >
                       Delete
                     </AlertDialogAction>
-                    {/* Or, if you prefer a Button: 
-                    <AlertDialogAction asChild>
-                      <Button variant="destructive" onClick={() => setCharacters(prev => prev.filter(c => c.id !== mainCharacter.id))}>
-                        Delete
-                      </Button>
-                    </AlertDialogAction> */}
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
