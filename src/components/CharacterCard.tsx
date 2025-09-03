@@ -4,7 +4,12 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowUp, ArrowDown, Pencil, MoreVertical, CheckSquare, XCircle } from 'lucide-react';
 import { getLevelProgress } from '@/lib/levels';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Star } from "lucide-react";
+import { XIcon } from "lucide-react";
+import {
+  AlertDialog, AlertDialogTrigger, AlertDialogContent,
+  AlertDialogHeader, AlertDialogTitle, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogCancel, AlertDialogAction
+} from "@/components/ui/alert-dialog";
 
 interface CharacterCardProps {
   character: {
@@ -175,15 +180,37 @@ const CharacterCard: React.FC<CharacterCardProps> = ({
                 <Pencil className="h-3 w-3 mr-1" />
                 Edit
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onRemove?.(character.id)}
-                title="Remove character"
-                className="text-destructive hover:text-destructive h-7 w-7 p-0 flex-shrink-0"
-              >
-                ✕
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-red-500"
+                    aria-label="Delete character"
+                    title="Delete character"
+                  >
+                    <XIcon className="h-4 w-4" aria-hidden="true" />
+                  </Button>
+                </AlertDialogTrigger>
+
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete {character.name}?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will remove the character from your roster. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      className="bg-red-600 hover:bg-red-700"
+                      onClick={() => onRemove?.(character.id)}
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           ) : (
             // Boss tracker variant - no action buttons needed

@@ -447,11 +447,22 @@ const BossTracker = () => {
           {roster.length === 0 && (
             <Card className="card-gaming"><CardContent className="pt-6">Add characters in Roster to start tracking.</CardContent></Card>
           )}
-          {getFilteredCharacters(roster, [...weeklyBosses, ...dailyBosses, ...monthlyBosses]).map((c) => {
-            const stats = getCompletionStats(c.name, [...weeklyBosses, ...dailyBosses, ...monthlyBosses]);
-            const visibleBosses = [...weeklyBosses, ...dailyBosses, ...monthlyBosses].filter((b) => isBossEnabledForCharacter(c.name, b.name));
+          {(() => {
+          const bosses = [...weeklyBosses, ...dailyBosses, ...monthlyBosses];
+          const filtered = getFilteredCharacters(roster, bosses);
+
+          // move the first isMain to the front, keep others in the same order
+          const idx = filtered.findIndex(c => !!c.isMain);
+          const charactersMainFirst =
+            idx > 0
+              ? [filtered[idx], ...filtered.slice(0, idx), ...filtered.slice(idx + 1)]
+              : filtered;
+
+          return charactersMainFirst.map((c) => {
+            const stats = getCompletionStats(c.name, bosses);
+            const visibleBosses = bosses.filter((b) => isBossEnabledForCharacter(c.name, b.name));
             const allChecked = visibleBosses.length > 0 && visibleBosses.every(b => (progressByCharacter[c.name] || {})[b.name]);
-            
+
             return (
               <div key={c.id} className="space-y-3">
                 <CharacterCard
@@ -584,7 +595,8 @@ const BossTracker = () => {
                 </Card>
               </div>
             );
-          })}
+          });
+        })()}
         </div>
         <div className="flex justify-end">
           <Button onClick={resetAllProgress} variant="outline" size="sm" className="text-muted-foreground hover:text-primary">

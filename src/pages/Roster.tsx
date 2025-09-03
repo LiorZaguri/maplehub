@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
-import { Plus, RefreshCw, User, Clock, Pencil, ArrowUp, ArrowDown, Trophy } from 'lucide-react';
+import { Plus, RefreshCw, User, Clock, Pencil, XIcon, ArrowUp, ArrowDown, Trophy } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { listAllBosses } from '@/lib/bossData';
@@ -17,6 +17,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getLevelProgress } from '@/lib/levels';
 import CharacterCard from '@/components/CharacterCard';
+import {
+  AlertDialog, AlertDialogTrigger, AlertDialogContent,
+  AlertDialogHeader, AlertDialogTitle, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogCancel, AlertDialogAction
+} from "@/components/ui/alert-dialog";
 
 interface Character {
   id: string;
@@ -30,7 +35,7 @@ interface Character {
   isMain: boolean;
   legionLevel?: number;
   raidPower?: number;
-}
+};
 
 const Roster = () => {
   const { toast } = useToast();
@@ -71,6 +76,7 @@ const Roster = () => {
     return { difficulty, base };
   };
 
+  
   const handleBulkAdd = async () => {
     const names = Array.from(new Set(bulkNamesInput
       .split(/(?:,|\s|&nbsp;|\u00A0)+/)
@@ -570,14 +576,21 @@ const Roster = () => {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-2">
-          <Input
-                placeholder="Enter character name(s)"
-                value={bulkNamesInput}
-                onChange={(e) => setBulkNamesInput(e.target.value)}
-                className="flex-1"
-              />
-            <Button 
-              onClick={handleBulkAdd} 
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!isLoading) handleBulkAdd();
+            }}
+            className="w-full flex gap-2"
+          >
+            <Input
+              placeholder="Enter character name(s)"
+              value={bulkNamesInput}
+              onChange={(e) => setBulkNamesInput(e.target.value)}
+              className="flex-1"
+            />
+            <Button
+              type="submit"                // <-- important
               disabled={isLoading}
               className="btn-hero w-full sm:w-auto"
             >
@@ -587,6 +600,7 @@ const Roster = () => {
                 <Plus className="h-4 w-4" />
               )}
             </Button>
+          </form>
           </div>
           <p className="text-xs text-muted-foreground mt-1">
               Advanced: To add multiple characters at once, you can enter their names separated by commas or spaces.
@@ -763,9 +777,65 @@ const Roster = () => {
       </Dialog>
       <Card className="card-gaming">
         <CardHeader>
+          {mainCharacter && ( 
+            <div className='absolute right-10 '>
+              <Button
+                    variant="ghost"
+                    size="sm"
+                    title="Edit bosses"
+                    onClick={() => openBossEditor(mainCharacter.name)}
+                    className=""
+                  >
+                    <Pencil className="" />
+                    Edit
+              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-red-500"
+                    aria-label="Delete character"
+                    title="Delete character"
+                  >
+                    <XIcon className="h-4 w-4" aria-hidden="true" />
+                  </Button>
+                </AlertDialogTrigger>
+
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete {mainCharacter.name}?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will remove the character from your roster. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      className="bg-red-600 hover:bg-red-700"
+                      onClick={() =>
+                        setCharacters(prev => prev.filter(c => c.id !== mainCharacter.id))
+                      }
+                    >
+                      Delete
+                    </AlertDialogAction>
+                    {/* Or, if you prefer a Button: 
+                    <AlertDialogAction asChild>
+                      <Button variant="destructive" onClick={() => setCharacters(prev => prev.filter(c => c.id !== mainCharacter.id))}>
+                        Delete
+                      </Button>
+                    </AlertDialogAction> */}
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div> 
+            )
+          } 
           <CardTitle className="flex items-center space-x-2">
           <Trophy className="h-5 w-5 text-amber-400" aria-hidden="true" />
-            <span>Main Character</span>
+            <span>Main Character 
+              
+            </span>
           </CardTitle>
         </CardHeader>
 
@@ -775,16 +845,17 @@ const Roster = () => {
             <img
               src={mainCharacter.avatarUrl}
               alt={mainCharacter.name}
-              className="w-16 h-16 rounded-md border border-gray-700"
+              className="w-22 h-22 rounded-md"
             />
 
             <div className="flex flex-col">
               {/* Name + Level/Class */}
               <span className="font-semibold text-lg text-white">
-                {mainCharacter.name}
+                {mainCharacter.name} 
+                
               </span>
               <span className="text-sm text-gray-400">
-                Lv. {mainCharacter.level} — {mainCharacter.class}
+                Lv. {mainCharacter.level} ({getLevelProgress(mainCharacter.level, mainCharacter.exp)}%) — {mainCharacter.class}
               </span>
 
               {/* Legion / RaidPower badges */}
@@ -808,23 +879,27 @@ const Roster = () => {
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <User className="h-5 w-5 text-primary" />
-            <span>Characters ({characters.length})</span>
+            <span>Mule Characters ({characters.length - 1})</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
           {/* Character Cards - Responsive Grid Layout */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
             {characters.map((character, idx) => (
-              <CharacterCard
-                key={character.id}
-                character={character}
-                variant="roster"
-                index={idx}
-                onMoveUp={() => moveCharacter(idx, -1)}
-                onMoveDown={() => moveCharacter(idx, 1)}
-                onEditBosses={() => openBossEditor(character.name)}
-                onRemove={() => setCharacters(prev => prev.filter(c => c.id !== character.id))}
-              />
+              <>
+              {!character.isMain && 
+                <CharacterCard
+                  key={character.id}
+                  character={character}
+                  variant="roster"
+                  index={idx}
+                  onMoveUp={() => moveCharacter(idx, -1)}
+                  onMoveDown={() => moveCharacter(idx, 1)}
+                  onEditBosses={() => openBossEditor(character.name)}
+                  onRemove={() => setCharacters(prev => prev.filter(c => c.id !== character.id))}
+                />
+              }
+              </>
             ))}
           </div>
         </CardContent>
