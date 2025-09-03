@@ -37,6 +37,9 @@ jobs:
       run: npm run build:prod
       env:
         NODE_ENV: production
+        VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+        VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+        ALLOWED_ORIGINS: ${{ vars.ALLOWED_ORIGINS }}
         
     - name: Setup Pages
       uses: actions/configure-pages@v4
