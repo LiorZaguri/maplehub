@@ -931,7 +931,7 @@ const Roster = () => {
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <User className="h-5 w-5 text-primary" />
-            <span>Mule Characters ({characters.length - 1})</span>
+            <span>Mule Characters ({characters.length - (mainCharacter ? 1 : 0)})</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
