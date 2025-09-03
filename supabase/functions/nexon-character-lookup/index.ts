@@ -6,7 +6,31 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+declare const Deno: {
+  env: {
+    get(key: string): string | undefined;
+  };
+};
+
+const allowedOrigins = (Deno.env.get('ALLOWED_ORIGINS') ?? '')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
+
+
 serve(async (req) => {
+  const origin = req.headers.get('origin') ?? '';
+
+  if (!allowedOrigins.includes(origin)) {
+    return new Response('Forbidden', { status: 403 });
+  }
+
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Headers':
+      'authorization, x-client-info, apikey, content-type',
+  };
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
