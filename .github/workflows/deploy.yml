@@ -22,6 +22,14 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
+      - name: Print env (debug)
+        run: |
+          echo "VITE_SUPABASE_URL=${VITE_SUPABASE_URL}"
+          echo "VITE_SUPABASE_ANON_KEY length: $(printf %s "$VITE_SUPABASE_ANON_KEY" | wc -c)"
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+          
       - name: Checkout
         uses: actions/checkout@v4
 
