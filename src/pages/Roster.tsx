@@ -614,7 +614,7 @@ const Roster = () => {
             </div>
 
             <ScrollArea className="h-[60vh] sm:h-[70vh] rounded border p-2" style={{ border: '0' }}>
-              <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
+              <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'monthly' | 'weekly' | 'daily')}>
                 <TabsList className="grid grid-cols-3 mb-3 w-full">
                   <TabsTrigger value="monthly">Monthly</TabsTrigger>
                   <TabsTrigger value="weekly">Weekly</TabsTrigger>
@@ -730,7 +730,9 @@ const Roster = () => {
                     pparsed[pendingCharacterName] = { ...partySizes };
                   }
                   localStorage.setItem(pkey, JSON.stringify(pparsed));
-                } catch {}
+                } catch (error) {
+                  console.error('Failed to save boss selections', error);
+                }
                 setIsBossDialogOpen(false);
                 setPendingCharacterName(null);
                 setPendingBulkNames(null);

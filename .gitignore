@@ -19,11 +19,13 @@ dist-ssr
 .env.test.local
 .env.production.local
 .env.*
+!.env.example
 
 # Supabase
 .env.local
 supabase/.env
 supabase/.env.local
+!supabase/.env.example
 
 # Build outputs
 build/

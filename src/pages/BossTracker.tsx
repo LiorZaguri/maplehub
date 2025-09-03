@@ -116,7 +116,7 @@ const BossTracker = () => {
     try {
       const stored = localStorage.getItem('maplehub_roster');
       if (!stored) return [];
-      const parsed = JSON.parse(stored) as Array<any>;
+      const parsed = JSON.parse(stored) as RosterCharacter[];
       return parsed.map((c) => ({ id: c.id, name: c.name, class: c.class, level: c.level, avatarUrl: c.avatarUrl, exp: c.exp }));
     } catch {
       return [];

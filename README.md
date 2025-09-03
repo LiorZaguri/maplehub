@@ -96,11 +96,17 @@ If you prefer manual deployment:
 
 ### Environment Variables
 
-Create a `.env.local` file for local development:
+Create a `.env.local` file for local development (see `.env.example` for the full list):
 
 ```env
 VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+For the Supabase Edge Function, define allowed origins in `supabase/.env`:
+
+```env
+ALLOWED_ORIGINS=http://localhost:5173
 ```
 
 ### Base Path
