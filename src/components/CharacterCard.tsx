@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowUp, ArrowDown, Pencil, MoreVertical, CheckSquare, XCircle } from 'lucide-react';
+import { ArrowUp, ArrowDown, Pencil, MoreVertical, CheckSquare, XCircle, Star } from 'lucide-react';
 import { getLevelProgress } from '@/lib/levels';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { XIcon } from "lucide-react";
@@ -29,6 +29,7 @@ interface CharacterCardProps {
   onMoveDown?: (index: number) => void;
   onEditBosses?: (characterName: string) => void;
   onRemove?: (characterId: string) => void;
+  onSetAsMain?: (characterId: string) => void;
   onMoreActions?: (characterName: string) => void;
   onToggleAllBosses?: (characterName: string, checkAll: boolean) => void;
   completionStats?: {
@@ -47,6 +48,7 @@ const CharacterCard: React.FC<CharacterCardProps> = ({
   onMoveDown,
   onEditBosses,
   onRemove,
+  onSetAsMain,
   onMoreActions,
   onToggleAllBosses,
   completionStats,
@@ -151,7 +153,6 @@ const CharacterCard: React.FC<CharacterCardProps> = ({
       </div>
       {variant === 'roster' ? (
             <div className="pr-3 pl-3 flex items-center gap-2 pt-1 mt-auto">
-              
               <Button
                 variant="ghost"
                 size="sm"
@@ -180,42 +181,36 @@ const CharacterCard: React.FC<CharacterCardProps> = ({
                 <Pencil className="h-3 w-3 mr-1" />
                 Edit
               </Button>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="text-red-500"
-                    aria-label="Delete character"
-                    title="Delete character"
+                    title="More actions"
+                    className="h-7 w-7 p-0 flex-shrink-0"
                   >
-                    <XIcon className="h-4 w-4" aria-hidden="true" />
+                    <MoreVertical className="h-3 w-3" />
                   </Button>
-                </AlertDialogTrigger>
-
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete {character.name}?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This will remove the character from your roster. This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      className="bg-red-600 hover:bg-red-700"
-                      onClick={() => onRemove?.(character.id)}
-                    >
-                      Delete
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {onSetAsMain && !character.isMain && (
+                    <DropdownMenuItem onClick={() => onSetAsMain(character.id)}>
+                      <Star className="h-4 w-4 mr-2" /> Set as Main
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem
+                    onClick={() => onRemove?.(character.id)}
+                    className="text-red-600 focus:text-red-600"
+                  >
+                    <XIcon className="h-4 w-4 mr-2" /> Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           ) : (
             // Boss tracker variant - no action buttons needed
             <div className="pt-2 mt-auto">
-              
+
               {/* Content will be added by the parent component */}
             </div>
           )}

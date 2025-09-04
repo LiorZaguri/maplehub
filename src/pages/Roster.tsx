@@ -679,7 +679,7 @@ const Roster = () => {
         toast({ title: 'Error', description: 'Failed to fetch data for provided names', variant: 'destructive' });
         return;
       }
-      setCharacters(prev => [...prev, ...added]);
+      setCharacters(prev => enforceSingleMain([...prev, ...added]));
       setBulkNamesInput('');
       // Initialize dialog selections once
       const defaults: Record<string, boolean> = {};
@@ -1036,7 +1036,7 @@ const Roster = () => {
         lastUpdated: new Date().toLocaleString()
       };
       
-      setCharacters(prev => [...prev, newCharacter]);
+      setCharacters(prev => enforceSingleMain([...prev, newCharacter]));
       setNewCharacterName('');
       // Open boss selection dialog for this character
       setPendingCharacterName(characterData.name);
@@ -1080,6 +1080,32 @@ const Roster = () => {
   const [mainLegion, setMainLegion] = useState<number | null>(null);
   const [mainRaidPower, setMainRaidPower] = useState<number | null>(null);
   const [mainCharacter, setMainCharacter] = useState<Character | null>(null);
+
+  // Function to enforce single main character
+  const enforceSingleMain = (chars: Character[]): Character[] => {
+    const mains = chars.filter(c => c.isMain);
+    if (mains.length <= 1) return chars;
+
+    // If multiple mains, keep only the one with highest level
+    const sortedMains = mains.sort((a, b) => b.level - a.level);
+    const mainToKeep = sortedMains[0];
+
+    return chars.map(c =>
+      c.id === mainToKeep.id ? c : { ...c, isMain: false }
+    );
+  };
+
+  // Function to set a character as main
+  const setCharacterAsMain = (characterId: string) => {
+    setCharacters(prev => {
+      const updated = prev.map(c =>
+        c.id === characterId
+          ? { ...c, isMain: true }
+          : { ...c, isMain: false }
+      );
+      return enforceSingleMain(updated);
+    });
+  };
 
   useEffect(() => {
     const main = characters.find(c => !!c.isMain) ?? null;
@@ -1140,9 +1166,10 @@ const Roster = () => {
         });
       }
   
-      setCharacters(updated);
-  
-      const main = updated.find((c) => c.isMain) ?? null;
+      const enforced = enforceSingleMain(updated);
+      setCharacters(enforced);
+
+      const main = enforced.find((c) => c.isMain) ?? null;
       setMainCharacter(main);
       setMainLegion(main?.legionLevel ?? null);
       setMainRaidPower(main?.raidPower ?? null);
@@ -1906,6 +1933,7 @@ const Roster = () => {
                   onMoveDown={() => moveCharacter(idx, 1)}
                   onEditBosses={() => openBossEditor(character.name)}
                   onRemove={() => setCharacters(prev => prev.filter(c => c.id !== character.id))}
+                  onSetAsMain={setCharacterAsMain}
                 />
               }
               </>
