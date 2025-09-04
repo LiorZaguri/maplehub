@@ -965,7 +965,9 @@ const BossTracker = () => {
           return charactersMainFirst.map((c) => {
             const stats = getCompletionStats(c.name, bosses);
             const visibleBosses = bosses.filter((b) => isBossEnabledForCharacter(c.name, b.name));
-            const allChecked = visibleBosses.length > 0 && visibleBosses.every(b => (progressByCharacter[c.name] || {})[b.name]);
+            // For check all button state, only consider weekly/daily bosses since monthly are excluded from check all
+            const weeklyDailyBosses = visibleBosses.filter(b => !monthlyBosses.some(mb => mb.name === b.name));
+            const allChecked = weeklyDailyBosses.length > 0 && weeklyDailyBosses.every(b => (progressByCharacter[c.name] || {})[b.name]);
 
             
             return (
@@ -979,7 +981,11 @@ const BossTracker = () => {
                     setProgressByCharacter((prev) => {
                       const current = prev[characterName] || {};
                       const updated: CharacterBossProgress = { ...current };
-                      visibleBosses.forEach(b => { updated[b.name] = checkAll; });
+                      // Only toggle weekly and daily bosses, exclude monthly bosses
+                      const weeklyDailyBosses = visibleBosses.filter(b =>
+                        !monthlyBosses.some(mb => mb.name === b.name)
+                      );
+                      weeklyDailyBosses.forEach(b => { updated[b.name] = checkAll; });
                       return { ...prev, [characterName]: updated };
                     });
                   }}
