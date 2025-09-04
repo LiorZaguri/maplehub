@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, RefreshCw, User, Clock, Pencil, XIcon, ArrowUp, ArrowDown, Trophy } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { listAllBosses } from '@/lib/bossData';
+import { listAllBosses, getMaxPartySize } from '@/lib/bossData';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -81,6 +81,7 @@ const Roster = () => {
   });
   const [selectedVariantByBase, setSelectedVariantByBase] = useState<Record<string, string>>({});
   const [baseEnabledByBase, setBaseEnabledByBase] = useState<Record<string, boolean>>({});
+  const [searchQuery, setSearchQuery] = useState('');
   const makeGroupKey = (category: 'monthly' | 'weekly' | 'daily', base: string) => `${category}:${base}`;
 
   const parseBoss = (fullName: string): { difficulty: string; base: string } => {
@@ -217,6 +218,11 @@ const Roster = () => {
   );
   const groupedAllForSave = [...groupedDaily, ...groupedWeekly, ...groupedMonthly];
   const [activeTab, setActiveTab] = useState<'monthly' | 'weekly' | 'daily'>('weekly');
+
+  // Filtered data for search
+  const filteredGroupedDaily = searchQuery ? groupedDaily.filter(([base]) => base.toLowerCase().includes(searchQuery.toLowerCase())) : groupedDaily;
+  const filteredGroupedWeekly = searchQuery ? groupedWeekly.filter(([base]) => base.toLowerCase().includes(searchQuery.toLowerCase())) : groupedWeekly;
+  const filteredGroupedMonthly = searchQuery ? groupedMonthly.filter(([base]) => base.toLowerCase().includes(searchQuery.toLowerCase())) : groupedMonthly;
 
   useEffect(() => {
     try {
@@ -394,7 +400,7 @@ const Roster = () => {
       const nextPartySizes: Record<string, number> = {};
       listAllBosses().forEach(b => {
         const n = partyForChar[b.name];
-        nextPartySizes[b.name] = Number.isFinite(n) ? Math.max(1, Math.min(6, Math.floor(n))) : 1;
+        nextPartySizes[b.name] = Number.isFinite(n) ? Math.max(1, Math.min(getMaxPartySize(b.name), Math.floor(n))) : 1;
       });
 
       setSelectedVariantByBase(nextSelectedByBase);
@@ -685,157 +691,222 @@ const Roster = () => {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  const next: Record<string, boolean> = {};
-                  allBosses.forEach(b => { next[b.name] = true; });
-                  setSelectedBossEnabled(next);
-                }}
-              >Select All</Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  const next: Record<string, boolean> = {};
-                  allBosses.forEach(b => { next[b.name] = false; });
-                  setSelectedBossEnabled(next);
-                }}
-              >Deselect All</Button>
-              <div className="ml-auto text-sm text-muted-foreground self-center">
-                {Object.values(baseEnabledByBase).filter(Boolean).length} selected
-              </div>
-            </div>
+            <Input
+              placeholder="Search bosses..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full"
+            />
 
-            <ScrollArea className="h-[60vh] sm:h-[70vh] rounded border p-2" style={{ border: '0' }}>
+            <ScrollArea className="h-[50vh] sm:h-[60vh] rounded border p-2" style={{ border: '0' }}>
               <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
                 <TabsList className="grid grid-cols-3 mb-3 w-full">
                   <TabsTrigger value="monthly">Monthly</TabsTrigger>
                   <TabsTrigger value="weekly">Weekly</TabsTrigger>
-
+                  <TabsTrigger value="daily">Daily</TabsTrigger>
                 </TabsList>
-                {([['monthly', groupedMonthly], ['weekly', groupedWeekly], ['daily', groupedDaily]] as const).map(([key, data]) => (
+                {([['monthly', filteredGroupedMonthly], ['weekly', filteredGroupedWeekly], ['daily', filteredGroupedDaily]] as const).map(([key, data]) => (
                   <TabsContent key={key} value={key} className="m-0">
-                    <div className="px-3">
-                      <div className="hidden sm:flex items-center gap-3 text-xs text-muted-foreground mb-2">
-                        <div className="w-4" />
-                        <div className="w-7" />
-                        <div className="w-40">Boss</div>
-                        <div className="flex-1">Difficulty</div>
-                        <div className="w-24 text-right">Party Size</div>
-                        <div className="w-40 text-right">Est. Mesos</div>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-1 gap-3">
-                      {data.map(([base, variants]) => (
-                        <div key={base} className="rounded border p-3">
-                          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                            <div className="flex items-center gap-3">
-                              <Checkbox
-                                checked={!!baseEnabledByBase[makeGroupKey(key, base)]}
-                                onCheckedChange={() => setBaseEnabledByBase(prev => ({ ...prev, [makeGroupKey(key, base)]: !prev[makeGroupKey(key, base)] }))}
-                              />
-                              <img src={variants[0].imageUrl} alt={base} className="h-7 w-7 rounded-sm" onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/placeholder.svg'; }} />
-                              <div className="text-sm font-semibold text-primary flex-1 sm:w-40 truncate">{base}</div>
-                            </div>
-                            <div className="flex items-center gap-2 flex-wrap">
-                              {variants.map(v => {
-                                const selected = (selectedVariantByBase[makeGroupKey(key, base)] || variants[0]?.name) === v.name;
-                                return (
-                                  <Button
-                                    key={v.name}
-                                    type="button"
-                                    variant={selected ? 'default' : 'outline'}
-                                    size="sm"
-                                    onClick={() => setSelectedVariantByBase(prev => ({ ...prev, [makeGroupKey(key, base)]: v.name }))}
-                                  >
-                                    {v.difficulty}
-                                  </Button>
-                                );
-                              })}
-                            </div>
-                            <div className="flex items-center gap-1 text-xs sm:ml-auto">
-                              {(() => {
-                                const selName = selectedVariantByBase[makeGroupKey(key, base)] || variants[0]?.name || '';
-                                return (
-                                  <UiInput
-                                    type="number"
-                                    className="h-7 w-16"
-                                    min={1}
-                                    max={6}
-                                    value={partySizes[selName] ?? 1}
-                                    onChange={(e) => {
-                                      const n = Math.max(1, Math.min(6, Number(e.target.value) || 1));
-                                      setPartySizes(prev => ({ ...prev, [selName]: n }));
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                      {data.map(([base, variants]) => {
+                        const isSelected = !!baseEnabledByBase[makeGroupKey(key, base)];
+                        const selectedVariant = selectedVariantByBase[makeGroupKey(key, base)] || variants[0]?.name;
+                        const currentVariant = variants.find(v => v.name === selectedVariant) || variants[0];
+                        const partySize = partySizes[currentVariant?.name || ''] || 1;
+                        const mesosShare = currentVariant ? Math.floor(currentVariant.mesos / Math.max(1, partySize)) : 0;
+
+                        return (
+                          <div
+                            key={base}
+                            className={`relative rounded-lg border-2 transition-all duration-200 hover:shadow-lg ${
+                              isSelected
+                                ? 'border-primary bg-primary/5 shadow-md'
+                                : 'border-border hover:border-primary/50'
+                            }`}
+                          >
+                            {/* Selection overlay */}
+                            {isSelected && (
+                              <div className="absolute top-2 right-2 z-10">
+                                <div className="bg-primary text-primary-foreground rounded-full p-1">
+                                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                  </svg>
+                                </div>
+                              </div>
+                            )}
+
+                            <div className="p-4 cursor-pointer" onClick={() => {
+                              const currentWeeklyCount = Object.values(baseEnabledByBase).filter((enabled, index) => {
+                                const keys = Object.keys(baseEnabledByBase);
+                                const key = keys[index];
+                                return enabled && key.startsWith('weekly:');
+                              }).length;
+
+                              const isWeekly = key === 'weekly';
+                              const isDaily = key === 'daily';
+                              const wouldExceedLimit = (isWeekly || isDaily) && !isSelected && currentWeeklyCount >= 14;
+
+                              if (wouldExceedLimit) {
+                                toast({
+                                  title: "Weekly Boss Limit Reached",
+                                  description: "You've reached the 14 weekly boss limit. Please remove another boss before adding this one.",
+                                  variant: "destructive"
+                                });
+                                return;
+                              }
+
+                              setBaseEnabledByBase(prev => ({ ...prev, [makeGroupKey(key, base)]: !prev[makeGroupKey(key, base)] }));
+                            }}>
+                              {/* Boss Image */}
+                              <div className="flex justify-center mb-3">
+                                <div className="relative p-2 bg-gradient-to-br from-background to-muted/20 rounded-lg border border-border/50">
+                                  <img
+                                    src={variants[0].imageUrl}
+                                    alt={base}
+                                    className="h-6 w-6 rounded-sm object-cover border border-border/30"
+                                    style={{
+                                      imageRendering: 'pixelated'
                                     }}
+                                    onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/placeholder.svg'; }}
                                   />
-                                );
-                              })()}
-                              <span>/6</span>
-                            </div>
-                            <div className="text-xs text-muted-foreground flex-1 sm:w-40 text-right">
-                              {(() => {
-                                const selName = selectedVariantByBase[makeGroupKey(key, base)] || variants[0]?.name;
-                                const variant = variants.find(v => v.name === selName) || variants[0];
-                                const p = partySizes[variant?.name || ''] || 1;
-                                const share = variant ? Math.floor(variant.mesos / Math.max(1, p)) : 0;
-                                return `${share.toLocaleString()} mesos`;
-                              })()}
+                                  <div className="absolute inset-0 rounded-lg bg-gradient-to-t from-black/5 to-transparent pointer-events-none" />
+                                </div>
+                              </div>
+
+                              {/* Boss Name */}
+                              <h3 className="font-semibold text-sm text-center mb-2 text-primary truncate">{base}</h3>
+
+                              {/* Difficulty Selector */}
+                              <div className="mb-3">
+                                <Select
+                                  value={selectedVariant}
+                                  onValueChange={(value) => setSelectedVariantByBase(prev => ({ ...prev, [makeGroupKey(key, base)]: value }))}
+                                >
+                                  <SelectTrigger className="w-full h-8 text-xs">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {variants.map(v => (
+                                      <SelectItem key={v.name} value={v.name} className="text-xs">
+                                        {v.difficulty}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              {/* Party Size */}
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-xs text-muted-foreground">Party:</span>
+                                <div className="flex items-center gap-1">
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-6 w-6 p-0"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      const newSize = Math.max(1, partySize - 1);
+                                      setPartySizes(prev => ({ ...prev, [currentVariant?.name || '']: newSize }));
+                                    }}
+                                  >
+                                    -
+                                  </Button>
+                                  <span className="text-xs w-6 text-center">{partySize}</span>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-6 w-6 p-0"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      const maxSize = getMaxPartySize(currentVariant?.name || '');
+                                      const newSize = Math.min(maxSize, partySize + 1);
+                                      setPartySizes(prev => ({ ...prev, [currentVariant?.name || '']: newSize }));
+                                    }}
+                                  >
+                                    +
+                                  </Button>
+                                </div>
+                              </div>
+
+                              {/* Mesos Estimate */}
+                              <div className="text-center">
+                                <div className="text-xs text-muted-foreground">Est. Mesos</div>
+                                <div className="font-semibold text-sm text-primary">
+                                  {mesosShare.toLocaleString()}
+                                </div>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </TabsContent>
                 ))}
               </Tabs>
             </ScrollArea>
           </div>
-          <DialogFooter>
-            <Button
-              onClick={() => {
-                if (!pendingCharacterName) { setIsBossDialogOpen(false); return; }
-                try {
-                  const key = 'maplehub_boss_enabled';
-                  const stored = localStorage.getItem(key);
-                  const parsed = stored ? (JSON.parse(stored) as Record<string, Record<string, boolean>>) : {};
-                  const out: Record<string, boolean> = {};
-                  ([['daily', groupedDaily], ['weekly', groupedWeekly], ['monthly', groupedMonthly]] as const).forEach(([cat, data]) => {
-                    data.forEach(([base, variants]) => {
-                      const gkey = makeGroupKey(cat, base);
-                      const enabled = !!baseEnabledByBase[gkey];
-                      const sel = selectedVariantByBase[gkey] || variants[0]?.name;
-                      variants.forEach(v => { if (!(v.name in out)) out[v.name] = false; });
-                      if (enabled && sel) out[sel] = true;
+          <DialogFooter className="px-6 py-4 sm:px-6 sm:py-4">
+            <div className="flex items-center justify-between w-full">
+              <div className="flex flex-col">
+                <div className="text-sm text-muted-foreground">
+                  {(() => {
+                    const weeklyCount = Object.values(baseEnabledByBase).filter((enabled, index) => {
+                      const keys = Object.keys(baseEnabledByBase);
+                      const key = keys[index];
+                      return enabled && key.startsWith('weekly:');
+                    }).length;
+                    const totalCount = Object.values(baseEnabledByBase).filter(Boolean).length;
+                    return `${weeklyCount}/14 • ${totalCount} total selected`;
+                  })()}
+                </div>
+                <div className="text-xs text-muted-foreground/70 mt-1">
+                  Monthly bosses can be selected without restriction.
+                </div>
+              </div>
+              <Button
+                onClick={() => {
+                  if (!pendingCharacterName) { setIsBossDialogOpen(false); return; }
+                  try {
+                    const key = 'maplehub_boss_enabled';
+                    const stored = localStorage.getItem(key);
+                    const parsed = stored ? (JSON.parse(stored) as Record<string, Record<string, boolean>>) : {};
+                    const out: Record<string, boolean> = {};
+                    ([['daily', groupedDaily], ['weekly', groupedWeekly], ['monthly', groupedMonthly]] as const).forEach(([cat, data]) => {
+                      data.forEach(([base, variants]) => {
+                        const gkey = makeGroupKey(cat, base);
+                        const enabled = !!baseEnabledByBase[gkey];
+                        const sel = selectedVariantByBase[gkey] || variants[0]?.name;
+                        variants.forEach(v => { if (!(v.name in out)) out[v.name] = false; });
+                        if (enabled && sel) out[sel] = true;
+                      });
                     });
-                  });
-                  if (pendingBulkNames && pendingBulkNames.length > 0) {
-                    pendingBulkNames.forEach(n => { parsed[n] = out; });
-                  } else {
-                    parsed[pendingCharacterName] = out;
-                  }
-                  localStorage.setItem(key, JSON.stringify(parsed));
-                  const pkey = 'maplehub_boss_party';
-                  const pstored = localStorage.getItem(pkey);
-                  const pparsed = pstored ? (JSON.parse(pstored) as Record<string, Record<string, number>>) : {};
-                  if (pendingBulkNames && pendingBulkNames.length > 0) {
-                    pendingBulkNames.forEach(n => { pparsed[n] = { ...partySizes }; });
-                  } else {
-                    pparsed[pendingCharacterName] = { ...partySizes };
-                  }
-                  localStorage.setItem(pkey, JSON.stringify(pparsed));
-                } catch {}
-                setIsBossDialogOpen(false);
-                setPendingCharacterName(null);
-                setPendingBulkNames(null);
-                toast({ title: 'Bosses Saved', description: 'Your boss selections were saved for this character.', className: 'progress-complete' });
-              }}
-              className="btn-hero"
-            >Save</Button>
+                    if (pendingBulkNames && pendingBulkNames.length > 0) {
+                      pendingBulkNames.forEach(n => { parsed[n] = out; });
+                    } else {
+                      parsed[pendingCharacterName] = out;
+                    }
+                    localStorage.setItem(key, JSON.stringify(parsed));
+                    const pkey = 'maplehub_boss_party';
+                    const pstored = localStorage.getItem(pkey);
+                    const pparsed = pstored ? (JSON.parse(pstored) as Record<string, Record<string, number>>) : {};
+                    if (pendingBulkNames && pendingBulkNames.length > 0) {
+                      pendingBulkNames.forEach(n => { pparsed[n] = { ...partySizes }; });
+                    } else {
+                      pparsed[pendingCharacterName] = { ...partySizes };
+                    }
+                    localStorage.setItem(pkey, JSON.stringify(pparsed));
+                  } catch {}
+                  setIsBossDialogOpen(false);
+                  setPendingCharacterName(null);
+                  setPendingBulkNames(null);
+                  toast({ title: 'Bosses Saved', description: 'Your boss selections were saved for this character.', className: 'progress-complete' });
+                }}
+                className="btn-hero w-full sm:w-auto"
+              >Save</Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -943,7 +1014,7 @@ const Roster = () => {
         </CardHeader>
         <CardContent>
           {/* Character Cards - Responsive Grid Layout */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {characters.map((character, idx) => (
               <>
               {!character.isMain && 

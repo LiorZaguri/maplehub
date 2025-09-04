@@ -37,4 +37,11 @@ export function getBossImageUrl(bossName: string): string {
   return getAssetUrl('bosses/placeholder.png');
 }
 
-
+// Get maximum party size for a boss
+export function getMaxPartySize(bossName: string): number {
+  const parts = bossName.split(' ');
+  const base = parts.slice(1).join(' ');
+  if (base === 'Limbo') return 3;
+  if (base === 'Lotus') return 2;
+  return 6;
+}
