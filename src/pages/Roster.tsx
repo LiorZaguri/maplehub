@@ -1337,7 +1337,7 @@ const Roster = () => {
                       const isBeingEdited = editingPreset === preset;
                       const isEditMode = editingPreset !== null;
                       return (
-                        <div key={preset} className="flex items-center gap-1">
+                        <div key={`preset-${preset}`} className="flex items-center gap-1">
                           <Button
                             onClick={() => applyPreset(preset)}
                             variant={selectedPreset === preset ? "default" : "outline"}
@@ -1508,7 +1508,7 @@ const Roster = () => {
 
                             return (
                               <div
-                                key={base}
+                                key={`boss-${key}-${base}`}
                                 className={`relative rounded-lg border-2 transition-all duration-200 hover:shadow-lg ${
                                   isSelected
                                     ? 'border-primary bg-primary/5 shadow-md'
@@ -1775,7 +1775,7 @@ const Roster = () => {
                   <ScrollArea className="h-48 border rounded p-3">
                     <div className="space-y-2">
                       {selectedBosses.map((bossName, index) => (
-                        <div key={bossName} className="flex items-center justify-between gap-2 text-sm">
+                        <div key={`selected-boss-${bossName}-${index}`} className="flex items-center justify-between gap-2 text-sm">
                           <div className="flex items-center gap-2">
                             <div className="w-6 h-6 bg-primary/10 rounded flex items-center justify-center text-xs font-semibold">
                               {index + 1}
@@ -1922,8 +1922,7 @@ const Roster = () => {
           {/* Character Cards - Responsive Grid Layout */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {characters.map((character, idx) => (
-              <>
-              {!character.isMain && 
+              !character.isMain && (
                 <CharacterCard
                   key={character.id}
                   character={character}
@@ -1935,8 +1934,7 @@ const Roster = () => {
                   onRemove={() => setCharacters(prev => prev.filter(c => c.id !== character.id))}
                   onSetAsMain={setCharacterAsMain}
                 />
-              }
-              </>
+              )
             ))}
           </div>
         </CardContent>

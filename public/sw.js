@@ -1,6 +1,6 @@
-const CACHE_NAME = 'maplehub-v1';
-const STATIC_CACHE = 'maplehub-static-v1';
-const DYNAMIC_CACHE = 'maplehub-dynamic-v1';
+const CACHE_NAME = 'maplehub-v2.1';
+const STATIC_CACHE = 'maplehub-static-v2.1';
+const DYNAMIC_CACHE = 'maplehub-dynamic-v2.1';
 
 // Get the base path for GitHub Pages
 const getBasePath = () => {
@@ -32,18 +32,23 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Activate event - clean up old caches
+// Activate event - clean up old caches and claim clients
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== STATIC_CACHE && cacheName !== DYNAMIC_CACHE) {
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
+    Promise.all([
+      // Take control of all clients immediately
+      self.clients.claim(),
+      // Clean up old caches
+      caches.keys().then((cacheNames) => {
+        return Promise.all(
+          cacheNames.map((cacheName) => {
+            if (cacheName !== STATIC_CACHE && cacheName !== DYNAMIC_CACHE) {
+              return caches.delete(cacheName);
+            }
+          })
+        );
+      })
+    ])
   );
 });
 

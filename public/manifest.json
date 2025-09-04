@@ -9,13 +9,13 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/maple-leaf.svg",
+      "src": "maple-leaf.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
     },
     {
-      "src": "/favicon.ico",
+      "src": "favicon.ico",
       "sizes": "32x32",
       "type": "image/x-icon"
     }
