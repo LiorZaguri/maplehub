@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HashRouter, Routes, Route } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import Layout from "@/components/Layout";
+import { ServerStatusNotifier } from "@/components/ServerStatusNotifier";
+import { ServerStatusIndicator } from "@/components/ServerStatusIndicator";
 
 // Lazy load pages for better code splitting
 const Index = lazy(() => import("./pages/Index"));
@@ -12,6 +14,7 @@ const BossTracker = lazy(() => import("./pages/BossTracker"));
 const TaskTracker = lazy(() => import("./pages/TaskTracker"));
 const VITracker = lazy(() => import("./pages/VITracker"));
 const Mules = lazy(() => import("./pages/Mules"));
+const ServerStatus = lazy(() => import("./pages/ServerStatus"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Loading component
@@ -35,6 +38,11 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <ServerStatusNotifier />
+      {/* Desktop Server Status Indicator - Completely independent of routing */}
+      <div className="hidden md:block fixed left-0 bottom-0 w-64 z-50">
+        <ServerStatusIndicator />
+      </div>
       <HashRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Suspense fallback={<PageLoader />}>
           <Routes>
@@ -43,6 +51,7 @@ const App = () => (
             <Route path="/tasks" element={<TaskTracker />} />
             <Route path="/vi-tracker" element={<VITracker />} />
             <Route path="/mules" element={<Mules />} />
+            <Route path="/server-status" element={<ServerStatus />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
