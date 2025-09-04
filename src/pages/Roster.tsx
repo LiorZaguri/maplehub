@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
-import { Plus, RefreshCw, User, Clock, Pencil, XIcon, ArrowUp, ArrowDown, Trophy } from 'lucide-react';
+import { Plus, RefreshCw, User, Clock, Pencil, XIcon, ArrowUp, ArrowDown, Trophy, Calendar, BarChart3, RotateCcw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { listAllBosses, getMaxPartySize } from '@/lib/bossData';
@@ -82,7 +82,561 @@ const Roster = () => {
   const [selectedVariantByBase, setSelectedVariantByBase] = useState<Record<string, string>>({});
   const [baseEnabledByBase, setBaseEnabledByBase] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState('');
+  const [presets, setPresets] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem('maplehub_boss_presets');
+      const defaultPresets = ['NLomien Mule', 'HLotus Mule', 'Ctene Mule'];
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        // Merge defaults with stored presets, ensuring no duplicates
+        const merged = [...defaultPresets, ...parsed.filter((p: string) => !defaultPresets.includes(p))];
+        return merged;
+      }
+      return defaultPresets;
+    } catch {
+      return ['NLomien Mule', 'HLotus Mule', 'Ctene Mule'];
+    }
+  });
+  const [newPresetName, setNewPresetName] = useState('');
+  const [showAddPreset, setShowAddPreset] = useState(false);
+  const [showSavePresetDialog, setShowSavePresetDialog] = useState(false);
+  const [pendingPresetName, setPendingPresetName] = useState('');
+  const [editingPreset, setEditingPreset] = useState<string | null>(null);
+  const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
   const makeGroupKey = (category: 'monthly' | 'weekly' | 'daily', base: string) => `${category}:${base}`;
+
+  // Get currently selected bosses
+  const getCurrentlySelectedBosses = () => {
+    const selectedBosses: string[] = [];
+    ([['daily', groupedDaily], ['weekly', groupedWeekly], ['monthly', groupedMonthly]] as const).forEach(([cat, data]) => {
+      data.forEach(([base, variants]) => {
+        const gkey = makeGroupKey(cat, base);
+        const enabled = !!baseEnabledByBase[gkey];
+        if (enabled) {
+          const selectedVariant = selectedVariantByBase[gkey] || variants[0]?.name;
+          if (selectedVariant) {
+            selectedBosses.push(selectedVariant);
+          }
+        }
+      });
+    });
+    return selectedBosses;
+  };
+
+  // Preset boss configurations
+  const getPresetBosses = (presetName: string) => {
+    const presetConfigs: Record<string, Record<string, { enabled: boolean; partySize: number; difficulty: string }>> = {
+      'NLomien Mule': {
+        'Normal Lotus': {
+          "enabled": true,
+          "partySize": 1,
+          "difficulty": "Normal Lotus"
+        },
+        "Normal Damien": {
+          "enabled": true,
+          "partySize": 1,
+          "difficulty": "Normal Damien"
+        },
+        "Normal Akechi": {
+          "enabled": true,
+          "partySize": 1,
+          "difficulty": "Normal Akechi"
+        },
+        "Chaos Papulatus": {
+          "enabled": true,
+          "partySize": 1,
+          "difficulty": "Chaos Papulatus"
+        },
+        "Chaos Vellum": {
+          "enabled": true,
+          "partySize": 1,
+          "difficulty": "Chaos Vellum"
+        },
+        "Hard Magnus": {
+          "enabled": true,
+          "partySize": 1,
+          "difficulty": "Hard Magnus"
+        },
+        "Chaos Crimson Queen": {
+          "enabled": true,
+          "partySize": 1,
+          "difficulty": "Chaos Crimson Queen"
+        },
+        "Chaos Pierre": {
+          "enabled": true,
+          "partySize": 1,
+          "difficulty": "Chaos Pierre"
+        },
+        "Normal Princess No": {
+          "enabled": true,
+          "partySize": 1,
+          "difficulty": "Normal Princess No"
+        },
+        "Chaos Von Bon": {
+          "enabled": true,
+          "partySize": 1,
+          "difficulty": "Chaos Von Bon"
+        },
+        "Chaos Zakum": {
+          "enabled": true,
+          "partySize": 1,
+          "difficulty": "Chaos Zakum"
+        },
+        "Easy Cygnus": {
+          "enabled": true,
+          "partySize": 1,
+          "difficulty": "Easy Cygnus"
+        },
+        "Chaos Pink Bean": {
+          "enabled": true,
+          "partySize": 1,
+          "difficulty": "Chaos Pink Bean"
+        },
+        "Hard Hilla": {
+          "enabled": true,
+          "partySize": 1,
+          "difficulty": "Hard Hilla"
+        }
+      },
+      'HLotus Mule': {
+          "Hard Lotus": {
+            "enabled": true,
+            "partySize": 1,
+            "difficulty": "Hard Lotus"
+          },
+          "Normal Slime": {
+            "enabled": true,
+            "partySize": 1,
+            "difficulty": "Normal Slime"
+          },
+          "Easy Lucid": {
+            "enabled": true,
+            "partySize": 1,
+            "difficulty": "Easy Lucid"
+          },
+          "Normal Damien": {
+            "enabled": true,
+            "partySize": 1,
+            "difficulty": "Normal Damien"
+          },
+          "Normal Akechi": {
+            "enabled": true,
+            "partySize": 1,
+            "difficulty": "Normal Akechi"
+          },
+          "Chaos Papulatus": {
+            "enabled": true,
+            "partySize": 1,
+            "difficulty": "Chaos Papulatus"
+          },
+          "Chaos Vellum": {
+            "enabled": true,
+            "partySize": 1,
+            "difficulty": "Chaos Vellum"
+          },
+          "Hard Magnus": {
+            "enabled": true,
+            "partySize": 1,
+            "difficulty": "Hard Magnus"
+          },
+          "Chaos Crimson Queen": {
+            "enabled": true,
+            "partySize": 1,
+            "difficulty": "Chaos Crimson Queen"
+          },
+          "Chaos Pierre": {
+            "enabled": true,
+            "partySize": 1,
+            "difficulty": "Chaos Pierre"
+          },
+          "Normal Princess No": {
+            "enabled": true,
+            "partySize": 1,
+            "difficulty": "Normal Princess No"
+          },
+          "Chaos Von Bon": {
+            "enabled": true,
+            "partySize": 1,
+            "difficulty": "Chaos Von Bon"
+          },
+          "Chaos Zakum": {
+            "enabled": true,
+            "partySize": 1,
+            "difficulty": "Chaos Zakum"
+          },
+          "Easy Cygnus": {
+            "enabled": true,
+            "partySize": 1,
+            "difficulty": "Easy Cygnus"
+          }
+      },
+      'Ctene Mule': {
+          "Hard Lotus": {
+            "enabled": true,
+            "partySize": 1,
+            "difficulty": "Hard Lotus"
+          },
+          "Hard Verus Hilla": {
+            "enabled": true,
+            "partySize": 1,
+            "difficulty": "Hard Verus Hilla"
+          },
+          "Hard Darknell": {
+            "enabled": true,
+            "partySize": 1,
+            "difficulty": "Hard Darknell"
+          },
+          "Hard Will": {
+            "enabled": true,
+            "partySize": 1,
+            "difficulty": "Hard Will"
+          },
+          "Chaos Slime": {
+            "enabled": true,
+            "partySize": 1,
+            "difficulty": "Chaos Slime"
+          },
+          "Chaos Gloom": {
+            "enabled": true,
+            "partySize": 1,
+            "difficulty": "Chaos Gloom"
+          },
+          "Hard Lucid": {
+            "enabled": true,
+            "partySize": 1,
+            "difficulty": "Hard Lucid"
+          },
+          "Hard Damien": {
+            "enabled": true,
+            "partySize": 1,
+            "difficulty": "Hard Damien"
+          },
+          "Normal Akechi": {
+            "enabled": true,
+            "partySize": 1,
+            "difficulty": "Normal Akechi"
+          },
+          "Chaos Papulatus": {
+            "enabled": true,
+            "partySize": 1,
+            "difficulty": "Chaos Papulatus"
+          },
+          "Chaos Vellum": {
+            "enabled": true,
+            "partySize": 1,
+            "difficulty": "Chaos Vellum"
+          },
+          "Hard Magnus": {
+            "enabled": true,
+            "partySize": 1,
+            "difficulty": "Hard Magnus"
+          },
+          "Chaos Crimson Queen": {
+            "enabled": true,
+            "partySize": 1,
+            "difficulty": "Chaos Crimson Queen"
+          },
+          "Chaos Zakum": {
+            "enabled": true,
+            "partySize": 1,
+            "difficulty": "Chaos Zakum"
+          }
+      },
+    };
+    return presetConfigs[presetName] || {};
+  };
+
+  // Save custom preset with current boss configuration
+  const saveCustomPreset = (presetName: string) => {
+    const selectedBosses = getCurrentlySelectedBosses();
+    if (selectedBosses.length === 0) {
+      toast({
+        title: 'Cannot Save Empty Preset',
+        description: 'Please select at least one boss before saving the preset.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    // Create boss configuration object with party sizes and difficulty variants
+    const bossConfig: Record<string, { enabled: boolean; partySize: number; difficulty: string }> = {};
+    selectedBosses.forEach(bossName => {
+      bossConfig[bossName] = {
+        enabled: true,
+        partySize: partySizes[bossName] || 1,
+        difficulty: bossName // The boss name already includes the difficulty (e.g., "Hard Lotus")
+      };
+    });
+
+    // Save to localStorage
+    try {
+      const stored = localStorage.getItem('maplehub_custom_presets');
+      const customPresets = stored ? JSON.parse(stored) : {};
+      customPresets[presetName] = bossConfig;
+      localStorage.setItem('maplehub_custom_presets', JSON.stringify(customPresets));
+
+      // Add to presets list if not already there
+      if (!presets.includes(presetName)) {
+        const updatedPresets = [...presets, presetName];
+        setPresets(updatedPresets);
+        localStorage.setItem('maplehub_boss_presets', JSON.stringify(updatedPresets));
+      }
+
+      setShowSavePresetDialog(false);
+      setPendingPresetName('');
+      toast({
+        title: 'Preset Saved',
+        description: `${presetName} preset saved with ${selectedBosses.length} boss(es), their party sizes, and difficulty variants!`,
+        className: 'progress-complete'
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to save preset. Please try again.',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  // Delete a custom preset
+  const deletePreset = (presetName: string) => {
+    // Don't allow deletion of default presets
+    const defaultPresets = ['NLomien Mule', 'HLotus Mule', 'Ctene Mule'];
+    if (defaultPresets.includes(presetName)) {
+      toast({
+        title: 'Cannot Delete',
+        description: 'Default presets cannot be deleted.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    try {
+      // Remove from presets list
+      const updatedPresets = presets.filter(p => p !== presetName);
+      setPresets(updatedPresets);
+      localStorage.setItem('maplehub_boss_presets', JSON.stringify(updatedPresets));
+
+      // Remove from custom presets storage
+      const stored = localStorage.getItem('maplehub_custom_presets');
+      if (stored) {
+        const customPresets = JSON.parse(stored);
+        delete customPresets[presetName];
+        localStorage.setItem('maplehub_custom_presets', JSON.stringify(customPresets));
+      }
+
+      toast({
+        title: 'Preset Deleted',
+        description: `${presetName} preset has been deleted.`,
+        className: 'progress-complete'
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete preset. Please try again.',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  // Edit a preset (load its configuration)
+  const editPreset = (presetName: string) => {
+    if (editingPreset === presetName) {
+      // Exit edit mode
+      setEditingPreset(null);
+      toast({
+        title: 'Edit Mode Exited',
+        description: 'Changes discarded. Preset not modified.',
+        className: 'progress-warning'
+      });
+      return;
+    }
+
+    const defaultPresets = ['NLomien Mule', 'HLotus Mule', 'Ctene Mule'];
+    let bossConfig: Record<string, any> = {};
+    let isCustomPreset = false;
+
+    if (defaultPresets.includes(presetName)) {
+      // Load default preset configuration
+      bossConfig = getPresetBosses(presetName);
+    } else {
+      // Load custom preset configuration
+      const stored = localStorage.getItem('maplehub_custom_presets');
+      if (stored) {
+        const customPresets = JSON.parse(stored);
+        bossConfig = customPresets[presetName] || {};
+        isCustomPreset = true;
+      }
+    }
+
+    // Apply the preset configuration to current selections
+    const resetBaseEnabled: Record<string, boolean> = {};
+    const resetPartySizes: Record<string, number> = {};
+    const resetSelectedVariants: Record<string, string> = {};
+
+    // Initialize all bosses as disabled
+    groupedDaily.forEach(([base]) => {
+      resetBaseEnabled[makeGroupKey('daily', base)] = false;
+    });
+    groupedWeekly.forEach(([base]) => {
+      resetBaseEnabled[makeGroupKey('weekly', base)] = false;
+    });
+    groupedMonthly.forEach(([base]) => {
+      resetBaseEnabled[makeGroupKey('monthly', base)] = false;
+    });
+
+    // Apply preset selections
+    Object.entries(bossConfig).forEach(([bossName, config]) => {
+      // Handle both old format (boolean) and new format (object with enabled and partySize)
+      const enabled = isCustomPreset ? (config as any).enabled : config;
+      const partySize = isCustomPreset ? (config as any).partySize || 1 : 1;
+
+      if (enabled) {
+        // Find which category this boss belongs to
+        let found = false;
+
+        // Check daily bosses
+        groupedDaily.forEach(([base, variants]) => {
+          if (variants.some(v => v.name === bossName)) {
+            resetBaseEnabled[makeGroupKey('daily', base)] = true;
+            resetPartySizes[bossName] = partySize;
+            resetSelectedVariants[makeGroupKey('daily', base)] = bossName; // Set the specific variant
+            found = true;
+          }
+        });
+
+        // Check weekly bosses
+        if (!found) {
+          groupedWeekly.forEach(([base, variants]) => {
+            if (variants.some(v => v.name === bossName)) {
+              resetBaseEnabled[makeGroupKey('weekly', base)] = true;
+              resetPartySizes[bossName] = partySize;
+              resetSelectedVariants[makeGroupKey('weekly', base)] = bossName; // Set the specific variant
+              found = true;
+            }
+          });
+        }
+
+        // Check monthly bosses
+        if (!found) {
+          groupedMonthly.forEach(([base, variants]) => {
+            if (variants.some(v => v.name === bossName)) {
+              resetBaseEnabled[makeGroupKey('monthly', base)] = true;
+              resetPartySizes[bossName] = partySize;
+              resetSelectedVariants[makeGroupKey('monthly', base)] = bossName; // Set the specific variant
+              found = true;
+            }
+          });
+        }
+      }
+    });
+
+    // Update state
+    setBaseEnabledByBase(resetBaseEnabled);
+    setPartySizes(prev => ({ ...prev, ...resetPartySizes }));
+    setSelectedVariantByBase(prev => ({ ...prev, ...resetSelectedVariants })); // Update selected variants
+    setEditingPreset(presetName);
+
+    toast({
+      title: 'Edit Mode Activated',
+      description: `Editing ${presetName}. Make changes and save as a new preset.`,
+      className: 'progress-complete'
+    });
+  };
+
+  const applyPreset = (presetName: string) => {
+    let presetBosses = getPresetBosses(presetName);
+    let isCustomPreset = false;
+
+    // If not found in hardcoded presets, check custom presets in localStorage
+    if (Object.keys(presetBosses).length === 0) {
+      const stored = localStorage.getItem('maplehub_custom_presets');
+      if (stored) {
+        const customPresets = JSON.parse(stored);
+        presetBosses = customPresets[presetName] || {};
+        isCustomPreset = true;
+      }
+    }
+
+    if (Object.keys(presetBosses).length === 0) {
+      toast({ title: 'Preset Not Found', description: `No configuration found for ${presetName}`, variant: 'destructive' });
+      return;
+    }
+
+    // Reset all selections first
+    const resetBaseEnabled: Record<string, boolean> = {};
+    const resetPartySizes: Record<string, number> = {};
+    const resetSelectedVariants: Record<string, string> = {};
+
+    // Initialize all bosses as disabled
+    groupedDaily.forEach(([base]) => {
+      resetBaseEnabled[makeGroupKey('daily', base)] = false;
+    });
+    groupedWeekly.forEach(([base]) => {
+      resetBaseEnabled[makeGroupKey('weekly', base)] = false;
+    });
+    groupedMonthly.forEach(([base]) => {
+      resetBaseEnabled[makeGroupKey('monthly', base)] = false;
+    });
+
+    // Apply preset selections
+    Object.entries(presetBosses).forEach(([bossName, config]) => {
+      // Handle both old format (boolean) and new format (object with enabled and partySize)
+      const enabled = isCustomPreset ? (config as any).enabled : config;
+      const partySize = isCustomPreset ? (config as any).partySize || 1 : 1;
+
+      if (enabled) {
+        // Find which category this boss belongs to
+        let found = false;
+
+        // Check daily bosses
+        groupedDaily.forEach(([base, variants]) => {
+          if (variants.some(v => v.name === bossName)) {
+            resetBaseEnabled[makeGroupKey('daily', base)] = true;
+            resetPartySizes[bossName] = partySize;
+            resetSelectedVariants[makeGroupKey('daily', base)] = bossName; // Set the specific variant
+            found = true;
+          }
+        });
+
+        // Check weekly bosses
+        if (!found) {
+          groupedWeekly.forEach(([base, variants]) => {
+            if (variants.some(v => v.name === bossName)) {
+              resetBaseEnabled[makeGroupKey('weekly', base)] = true;
+              resetPartySizes[bossName] = partySize;
+              resetSelectedVariants[makeGroupKey('weekly', base)] = bossName; // Set the specific variant
+              found = true;
+            }
+          });
+        }
+
+        // Check monthly bosses
+        if (!found) {
+          groupedMonthly.forEach(([base, variants]) => {
+            if (variants.some(v => v.name === bossName)) {
+              resetBaseEnabled[makeGroupKey('monthly', base)] = true;
+              resetPartySizes[bossName] = partySize;
+              resetSelectedVariants[makeGroupKey('monthly', base)] = bossName; // Set the specific variant
+              found = true;
+            }
+          });
+        }
+      }
+    });
+
+    // Update state
+    setBaseEnabledByBase(resetBaseEnabled);
+    setPartySizes(resetPartySizes); // Replace entire state instead of merging
+    setSelectedVariantByBase(prev => ({ ...prev, ...resetSelectedVariants })); // Update selected variants
+    setSelectedPreset(presetName);
+
+    toast({
+      title: 'Preset Applied',
+      description: `${presetName} preset applied successfully!`,
+      className: 'progress-complete'
+    });
+  };
 
   const parseBoss = (fullName: string): { difficulty: string; base: string } => {
     const parts = fullName.split(' ');
@@ -681,7 +1235,14 @@ const Roster = () => {
         </CardContent>
       </Card>
       
-      <Dialog open={isBossDialogOpen} onOpenChange={setIsBossDialogOpen}>
+      <Dialog open={isBossDialogOpen} onOpenChange={(open) => {
+        setIsBossDialogOpen(open);
+        if (!open) {
+          // Exit edit mode and clear selected preset when dialog is closed
+          setEditingPreset(null);
+          setSelectedPreset(null);
+        }
+      }}>
         <DialogContent className="max-w-4xl w-[95vw] max-h-[90vh] overflow-hidden">
           <DialogHeader>
             <DialogTitle>
@@ -690,163 +1251,367 @@ const Roster = () => {
                 : `Choose bosses for ${pendingCharacterName}`}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
-            <Input
-              placeholder="Search bosses..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full"
-            />
+          <div className="flex flex-col lg:flex-row gap-4">
+            {/* Compact Sidebar - Navigation Style */}
+            <div className="lg:w-48 lg:flex-shrink-0">
+              <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border border-border rounded-lg p-2">
+                <nav className="space-y-2 py-2">
+                  <Button
+                    onClick={() => setActiveTab('monthly')}
+                    variant={activeTab === 'monthly' ? "default" : "ghost"}
+                    className={`w-full justify-start space-x-2 ${
+                      activeTab === 'monthly'
+                        ? 'btn-hero shadow-[var(--shadow-button)]'
+                        : 'hover:bg-card hover:text-primary'
+                    }`}
+                  >
+                    <Calendar className="h-4 w-4" />
+                    <span>Monthly</span>
+                  </Button>
+                  <Button
+                    onClick={() => setActiveTab('weekly')}
+                    variant={activeTab === 'weekly' ? "default" : "ghost"}
+                    className={`w-full justify-start space-x-2 ${
+                      activeTab === 'weekly'
+                        ? 'btn-hero shadow-[var(--shadow-button)]'
+                        : 'hover:bg-card hover:text-primary'
+                    }`}
+                  >
+                    <BarChart3 className="h-4 w-4" />
+                    <span>Weekly</span>
+                  </Button>
+                  <Button
+                    onClick={() => setActiveTab('daily')}
+                    variant={activeTab === 'daily' ? "default" : "ghost"}
+                    className={`w-full justify-start space-x-2 ${
+                      activeTab === 'daily'
+                        ? 'btn-hero shadow-[var(--shadow-button)]'
+                        : 'hover:bg-card hover:text-primary'
+                    }`}
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                    <span>Daily</span>
+                  </Button>
+                </nav>
 
-            <ScrollArea className="h-[50vh] sm:h-[60vh] rounded border p-2" style={{ border: '0' }}>
-              <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
-                <TabsList className="grid grid-cols-3 mb-3 w-full">
-                  <TabsTrigger value="monthly">Monthly</TabsTrigger>
-                  <TabsTrigger value="weekly">Weekly</TabsTrigger>
-                  <TabsTrigger value="daily">Daily</TabsTrigger>
-                </TabsList>
-                {([['monthly', filteredGroupedMonthly], ['weekly', filteredGroupedWeekly], ['daily', filteredGroupedDaily]] as const).map(([key, data]) => (
-                  <TabsContent key={key} value={key} className="m-0">
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                      {data.map(([base, variants]) => {
-                        const isSelected = !!baseEnabledByBase[makeGroupKey(key, base)];
-                        const selectedVariant = selectedVariantByBase[makeGroupKey(key, base)] || variants[0]?.name;
-                        const currentVariant = variants.find(v => v.name === selectedVariant) || variants[0];
-                        const partySize = partySizes[currentVariant?.name || ''] || 1;
-                        const mesosShare = currentVariant ? Math.floor(currentVariant.mesos / Math.max(1, partySize)) : 0;
-
-                        return (
-                          <div
-                            key={base}
-                            className={`relative rounded-lg border-2 transition-all duration-200 hover:shadow-lg ${
-                              isSelected
-                                ? 'border-primary bg-primary/5 shadow-md'
-                                : 'border-border hover:border-primary/50'
+                {/* Presets Section */}
+                <div className="mt-6 pt-4 border-t border-border/50">
+                  <div className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
+                    Presets
+                  </div>
+                  <div className="space-y-2">
+                    {editingPreset && (
+                      <div className="text-xs text-primary font-medium mb-2 flex items-center gap-2">
+                        <span>✏️ Editing: {editingPreset}</span>
+                      </div>
+                    )}
+                    {presets.map((preset) => {
+                      const isDefaultPreset = ['NLomien Mule', 'HLotus Mule', 'Ctene Mule'].includes(preset);
+                      const isBeingEdited = editingPreset === preset;
+                      const isEditMode = editingPreset !== null;
+                      return (
+                        <div key={preset} className="flex items-center gap-1">
+                          <Button
+                            onClick={() => applyPreset(preset)}
+                            variant={selectedPreset === preset ? "default" : "outline"}
+                            size="sm"
+                            className={`flex-1 justify-start text-xs h-8 ${
+                              selectedPreset === preset
+                                ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                                : ''
                             }`}
+                            disabled={isEditMode && !isBeingEdited}
                           >
-                            {/* Selection overlay */}
-                            {isSelected && (
-                              <div className="absolute top-2 right-2 z-10">
-                                <div className="bg-primary text-primary-foreground rounded-full p-1">
-                                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            {preset}
+                          </Button>
+                          {!isDefaultPreset && (
+                            <>
+                              <Button
+                                onClick={() => editPreset(preset)}
+                                variant={isBeingEdited ? "default" : "ghost"}
+                                size="sm"
+                                className={`h-8 w-8 p-0 ${
+                                  isBeingEdited
+                                    ? 'text-primary-foreground bg-primary hover:bg-primary/90'
+                                    : 'text-muted-foreground hover:text-primary'
+                                }`}
+                                title={isBeingEdited ? `Finish editing ${preset}` : `Edit ${preset} preset`}
+                              >
+                                {isBeingEdited ? (
+                                  <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
                                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                   </svg>
-                                </div>
-                              </div>
-                            )}
-
-                            <div className="p-4 cursor-pointer" onClick={() => {
-                              const currentWeeklyCount = Object.values(baseEnabledByBase).filter((enabled, index) => {
-                                const keys = Object.keys(baseEnabledByBase);
-                                const key = keys[index];
-                                return enabled && key.startsWith('weekly:');
-                              }).length;
-
-                              const isWeekly = key === 'weekly';
-                              const isDaily = key === 'daily';
-                              const wouldExceedLimit = (isWeekly || isDaily) && !isSelected && currentWeeklyCount >= 14;
-
-                              if (wouldExceedLimit) {
-                                toast({
-                                  title: "Weekly Boss Limit Reached",
-                                  description: "You've reached the 14 weekly boss limit. Please remove another boss before adding this one.",
-                                  variant: "destructive"
-                                });
-                                return;
-                              }
-
-                              setBaseEnabledByBase(prev => ({ ...prev, [makeGroupKey(key, base)]: !prev[makeGroupKey(key, base)] }));
-                            }}>
-                              {/* Boss Image */}
-                              <div className="flex justify-center mb-3">
-                                <div className="relative p-2 bg-gradient-to-br from-background to-muted/20 rounded-lg border border-border/50">
-                                  <img
-                                    src={variants[0].imageUrl}
-                                    alt={base}
-                                    className="h-6 w-6 rounded-sm object-cover border border-border/30"
-                                    style={{
-                                      imageRendering: 'pixelated'
-                                    }}
-                                    onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/placeholder.svg'; }}
-                                  />
-                                  <div className="absolute inset-0 rounded-lg bg-gradient-to-t from-black/5 to-transparent pointer-events-none" />
-                                </div>
-                              </div>
-
-                              {/* Boss Name */}
-                              <h3 className="font-semibold text-sm text-center mb-2 text-primary truncate">{base}</h3>
-
-                              {/* Difficulty Selector */}
-                              <div className="mb-3">
-                                <Select
-                                  value={selectedVariant}
-                                  onValueChange={(value) => setSelectedVariantByBase(prev => ({ ...prev, [makeGroupKey(key, base)]: value }))}
+                                ) : (
+                                  <Pencil className="h-3 w-3" />
+                                )}
+                              </Button>
+                              {isEditMode ? (
+                                <Button
+                                  onClick={() => setEditingPreset(null)}
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0 text-muted-foreground hover:text-orange-500"
+                                  title="Cancel editing and discard changes"
                                 >
-                                  <SelectTrigger className="w-full h-8 text-xs">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {variants.map(v => (
-                                      <SelectItem key={v.name} value={v.name} className="text-xs">
-                                        {v.difficulty}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
+                                  <XIcon className="h-3 w-3" />
+                                </Button>
+                              ) : (
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-8 w-8 p-0 text-muted-foreground hover:text-red-500"
+                                      title={`Delete ${preset} preset`}
+                                    >
+                                      <XIcon className="h-3 w-3" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Delete Preset: {preset}</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Are you sure you want to delete the "{preset}" preset? This action cannot be undone.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => deletePreset(preset)}
+                                        className="bg-red-600 hover:bg-red-700"
+                                      >
+                                        Delete
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      );
+                    })}
 
-                              {/* Party Size */}
-                              <div className="flex items-center justify-between mb-2">
-                                <span className="text-xs text-muted-foreground">Party:</span>
-                                <div className="flex items-center gap-1">
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    className="h-6 w-6 p-0"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      const newSize = Math.max(1, partySize - 1);
-                                      setPartySizes(prev => ({ ...prev, [currentVariant?.name || '']: newSize }));
-                                    }}
-                                  >
-                                    -
-                                  </Button>
-                                  <span className="text-xs w-6 text-center">{partySize}</span>
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    className="h-6 w-6 p-0"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      const maxSize = getMaxPartySize(currentVariant?.name || '');
-                                      const newSize = Math.min(maxSize, partySize + 1);
-                                      setPartySizes(prev => ({ ...prev, [currentVariant?.name || '']: newSize }));
-                                    }}
-                                  >
-                                    +
-                                  </Button>
+                    {/* Add New Preset */}
+                    {showAddPreset ? (
+                      <div className="flex gap-1">
+                        <Input
+                          placeholder="Preset name"
+                          value={newPresetName}
+                          onChange={(e) => setNewPresetName(e.target.value)}
+                          className="h-8 text-xs"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && newPresetName.trim()) {
+                              setPendingPresetName(newPresetName.trim());
+                              setShowSavePresetDialog(true);
+                              setShowAddPreset(false);
+                            } else if (e.key === 'Escape') {
+                              setNewPresetName('');
+                              setShowAddPreset(false);
+                            }
+                          }}
+                        />
+                        <Button
+                          onClick={() => {
+                            if (newPresetName.trim()) {
+                              setPendingPresetName(newPresetName.trim());
+                              setShowSavePresetDialog(true);
+                              setShowAddPreset(false);
+                            }
+                          }}
+                          size="sm"
+                          className="h-8 px-2"
+                        >
+                          ✓
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            setNewPresetName('');
+                            setShowAddPreset(false);
+                          }}
+                          variant="outline"
+                          size="sm"
+                          className="h-8 px-2"
+                        >
+                          ✕
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        onClick={() => setShowAddPreset(true)}
+                        variant="ghost"
+                        size="sm"
+                        className="w-full justify-start text-xs h-8 text-muted-foreground hover:text-primary"
+                      >
+                        + Add Preset
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+    {/* Main Content - Scrollable Boss Grid */}
+    <div className="flex-1 min-w-0">
+              {/* Search Bar */}
+              <div className="mb-4">
+                <Input
+                  placeholder={`Search ${activeTab} bosses...`}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full max-w-sm"
+                />
+              </div>
+              <ScrollArea className="h-[50vh] sm:h-[60vh] lg:h-[65vh] rounded border p-4" style={{ border: '0' }}>
+                <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
+                  {([['monthly', filteredGroupedMonthly], ['weekly', filteredGroupedWeekly], ['daily', filteredGroupedDaily]] as const).map(([key, data]) => (
+                    <TabsContent key={key} value={key} className="m-0">
+                      {data.length === 0 ? (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <p>No {key} bosses found matching your search.</p>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                          {data.map(([base, variants]) => {
+                            const isSelected = !!baseEnabledByBase[makeGroupKey(key, base)];
+                            const selectedVariant = selectedVariantByBase[makeGroupKey(key, base)] || variants[0]?.name;
+                            const currentVariant = variants.find(v => v.name === selectedVariant) || variants[0];
+                            const partySize = partySizes[currentVariant?.name || ''] || 1;
+                            const mesosShare = currentVariant ? Math.floor(currentVariant.mesos / Math.max(1, partySize)) : 0;
+
+                            return (
+                              <div
+                                key={base}
+                                className={`relative rounded-lg border-2 transition-all duration-200 hover:shadow-lg ${
+                                  isSelected
+                                    ? 'border-primary bg-primary/5 shadow-md'
+                                    : 'border-border hover:border-primary/50'
+                                }`}
+                              >
+                                {/* Selection overlay */}
+                                {isSelected && (
+                                  <div className="absolute top-2 right-2 z-10">
+                                    <div className="bg-primary text-primary-foreground rounded-full p-1">
+                                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                      </svg>
+                                    </div>
+                                  </div>
+                                )}
+
+                                <div className="p-4 cursor-pointer" onClick={() => {
+                                  const currentWeeklyCount = Object.values(baseEnabledByBase).filter((enabled, index) => {
+                                    const keys = Object.keys(baseEnabledByBase);
+                                    const key = keys[index];
+                                    return enabled && key.startsWith('weekly:');
+                                  }).length;
+
+                                  const isWeekly = key === 'weekly';
+                                  const isDaily = key === 'daily';
+                                  const wouldExceedLimit = (isWeekly || isDaily) && !isSelected && currentWeeklyCount >= 14;
+
+                                  if (wouldExceedLimit) {
+                                    toast({
+                                      title: "Weekly Boss Limit Reached",
+                                      description: "You've reached the 14 weekly boss limit. Please remove another boss before adding this one.",
+                                      variant: "destructive"
+                                    });
+                                    return;
+                                  }
+
+                                  setBaseEnabledByBase(prev => ({ ...prev, [makeGroupKey(key, base)]: !prev[makeGroupKey(key, base)] }));
+                                }}>
+                                  {/* Boss Image */}
+                                  <div className="flex justify-center mb-3">
+                                    <div className="relative p-2 bg-gradient-to-br from-background to-muted/20 rounded-lg border border-border/50">
+                                      <img
+                                        src={variants[0].imageUrl}
+                                        alt={base}
+                                        className="h-6 w-6 rounded-sm object-cover border border-border/30"
+                                        style={{
+                                          imageRendering: 'pixelated'
+                                        }}
+                                        onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/placeholder.svg'; }}
+                                      />
+                                      <div className="absolute inset-0 rounded-lg bg-gradient-to-t from-black/5 to-transparent pointer-events-none" />
+                                    </div>
+                                  </div>
+
+                                  {/* Boss Name */}
+                                  <h3 className="font-semibold text-sm text-center mb-2 text-primary truncate">{base}</h3>
+
+                                  {/* Difficulty Selector */}
+                                  <div className="mb-3">
+                                    <Select
+                                      value={selectedVariant}
+                                      onValueChange={(value) => setSelectedVariantByBase(prev => ({ ...prev, [makeGroupKey(key, base)]: value }))}
+                                    >
+                                      <SelectTrigger className="w-full h-8 text-xs">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {variants.map(v => (
+                                          <SelectItem key={v.name} value={v.name} className="text-xs">
+                                            {v.difficulty}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+
+                                  {/* Party Size */}
+                                  <div className="flex items-center justify-between mb-2">
+                                    <span className="text-xs text-muted-foreground">Party:</span>
+                                    <div className="flex items-center gap-1">
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-6 w-6 p-0"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          const newSize = Math.max(1, partySize - 1);
+                                          setPartySizes(prev => ({ ...prev, [currentVariant?.name || '']: newSize }));
+                                        }}
+                                      >
+                                        -
+                                      </Button>
+                                      <span className="text-xs w-6 text-center">{partySize}</span>
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-6 w-6 p-0"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          const maxSize = getMaxPartySize(currentVariant?.name || '');
+                                          const newSize = Math.min(maxSize, partySize + 1);
+                                          setPartySizes(prev => ({ ...prev, [currentVariant?.name || '']: newSize }));
+                                        }}
+                                      >
+                                        +
+                                      </Button>
+                                    </div>
+                                  </div>
+
+                                  {/* Mesos Estimate */}
+                                  <div className="text-center">
+                                    <div className="text-xs text-muted-foreground">Est. Mesos</div>
+                                    <div className="font-semibold text-sm text-primary">
+                                      {mesosShare.toLocaleString()}
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
-
-                              {/* Mesos Estimate */}
-                              <div className="text-center">
-                                <div className="text-xs text-muted-foreground">Est. Mesos</div>
-                                <div className="font-semibold text-sm text-primary">
-                                  {mesosShare.toLocaleString()}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </TabsContent>
-                ))}
-              </Tabs>
-            </ScrollArea>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </TabsContent>
+                  ))}
+                </Tabs>
+              </ScrollArea>
+            </div>
           </div>
           <DialogFooter className="px-6 py-4 sm:px-6 sm:py-4">
             <div className="flex items-center justify-between w-full">
@@ -866,50 +1631,167 @@ const Roster = () => {
                   Monthly bosses can be selected without restriction.
                 </div>
               </div>
-              <Button
-                onClick={() => {
-                  if (!pendingCharacterName) { setIsBossDialogOpen(false); return; }
-                  try {
-                    const key = 'maplehub_boss_enabled';
-                    const stored = localStorage.getItem(key);
-                    const parsed = stored ? (JSON.parse(stored) as Record<string, Record<string, boolean>>) : {};
-                    const out: Record<string, boolean> = {};
-                    ([['daily', groupedDaily], ['weekly', groupedWeekly], ['monthly', groupedMonthly]] as const).forEach(([cat, data]) => {
-                      data.forEach(([base, variants]) => {
-                        const gkey = makeGroupKey(cat, base);
+              <div className="flex items-center gap-4">
+                <div className="text-right">
+                  <div className="text-sm font-semibold text-primary">
+                    {(() => {
+                      let totalWeeklyMesos = 0;
+                      // Calculate weekly bosses earnings
+                      groupedWeekly.forEach(([base, variants]) => {
+                        const gkey = makeGroupKey('weekly', base);
                         const enabled = !!baseEnabledByBase[gkey];
-                        const sel = selectedVariantByBase[gkey] || variants[0]?.name;
-                        variants.forEach(v => { if (!(v.name in out)) out[v.name] = false; });
-                        if (enabled && sel) out[sel] = true;
+                        if (enabled) {
+                          const selectedVariant = selectedVariantByBase[gkey] || variants[0]?.name;
+                          const variant = variants.find(v => v.name === selectedVariant);
+                          if (variant) {
+                            const partySize = partySizes[variant.name] || 1;
+                            totalWeeklyMesos += Math.floor(variant.mesos / Math.max(1, partySize));
+                          }
+                        }
                       });
-                    });
-                    if (pendingBulkNames && pendingBulkNames.length > 0) {
-                      pendingBulkNames.forEach(n => { parsed[n] = out; });
-                    } else {
-                      parsed[pendingCharacterName] = out;
-                    }
-                    localStorage.setItem(key, JSON.stringify(parsed));
-                    const pkey = 'maplehub_boss_party';
-                    const pstored = localStorage.getItem(pkey);
-                    const pparsed = pstored ? (JSON.parse(pstored) as Record<string, Record<string, number>>) : {};
-                    if (pendingBulkNames && pendingBulkNames.length > 0) {
-                      pendingBulkNames.forEach(n => { pparsed[n] = { ...partySizes }; });
-                    } else {
-                      pparsed[pendingCharacterName] = { ...partySizes };
-                    }
-                    localStorage.setItem(pkey, JSON.stringify(pparsed));
-                  } catch {}
-                  setIsBossDialogOpen(false);
-                  setPendingCharacterName(null);
-                  setPendingBulkNames(null);
-                  toast({ title: 'Bosses Saved', description: 'Your boss selections were saved for this character.', className: 'progress-complete' });
-                }}
-                className="btn-hero w-full sm:w-auto"
-              >Save</Button>
+                      // Calculate daily bosses earnings (daily bosses can be done multiple times per week)
+                      groupedDaily.forEach(([base, variants]) => {
+                        const gkey = makeGroupKey('daily', base);
+                        const enabled = !!baseEnabledByBase[gkey];
+                        if (enabled) {
+                          const selectedVariant = selectedVariantByBase[gkey] || variants[0]?.name;
+                          const variant = variants.find(v => v.name === selectedVariant);
+                          if (variant) {
+                            const partySize = partySizes[variant.name] || 1;
+                            // Assume 7 days per week for daily bosses
+                            totalWeeklyMesos += Math.floor(variant.mesos / Math.max(1, partySize)) * 7;
+                          }
+                        }
+                      });
+                      return totalWeeklyMesos.toLocaleString();
+                    })()} mesos/week
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Estimated earnings
+                  </div>
+                </div>
+                <Button
+                  onClick={() => {
+                    if (!pendingCharacterName) { setIsBossDialogOpen(false); return; }
+                    try {
+                      const key = 'maplehub_boss_enabled';
+                      const stored = localStorage.getItem(key);
+                      const parsed = stored ? (JSON.parse(stored) as Record<string, Record<string, boolean>>) : {};
+                      const out: Record<string, boolean> = {};
+                      ([['daily', groupedDaily], ['weekly', groupedWeekly], ['monthly', groupedMonthly]] as const).forEach(([cat, data]) => {
+                        data.forEach(([base, variants]) => {
+                          const gkey = makeGroupKey(cat, base);
+                          const enabled = !!baseEnabledByBase[gkey];
+                          const sel = selectedVariantByBase[gkey] || variants[0]?.name;
+                          variants.forEach(v => { if (!(v.name in out)) out[v.name] = false; });
+                          if (enabled && sel) out[sel] = true;
+                        });
+                      });
+                      if (pendingBulkNames && pendingBulkNames.length > 0) {
+                        pendingBulkNames.forEach(n => { parsed[n] = out; });
+                      } else {
+                        parsed[pendingCharacterName] = out;
+                      }
+                      localStorage.setItem(key, JSON.stringify(parsed));
+                      const pkey = 'maplehub_boss_party';
+                      const pstored = localStorage.getItem(pkey);
+                      const pparsed = pstored ? (JSON.parse(pstored) as Record<string, Record<string, number>>) : {};
+                      if (pendingBulkNames && pendingBulkNames.length > 0) {
+                        pendingBulkNames.forEach(n => { pparsed[n] = { ...partySizes }; });
+                      } else {
+                        pparsed[pendingCharacterName] = { ...partySizes };
+                      }
+                      localStorage.setItem(pkey, JSON.stringify(pparsed));
+                    } catch {}
+                    setIsBossDialogOpen(false);
+                    setPendingCharacterName(null);
+                    setPendingBulkNames(null);
+                    toast({ title: 'Bosses Saved', description: 'Your boss selections were saved for this character.', className: 'progress-complete' });
+                  }}
+                  disabled={editingPreset !== null}
+                  className="btn-hero w-full sm:w-auto"
+                >Save</Button>
+              </div>
             </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Save Preset Dialog */}
+      <Dialog open={showSavePresetDialog} onOpenChange={setShowSavePresetDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Save Preset: {pendingPresetName}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {(() => {
+              const selectedBosses = getCurrentlySelectedBosses();
+              if (selectedBosses.length === 0) {
+                return (
+                  <div className="text-center py-6">
+                    <div className="text-red-500 text-4xl mb-2">⚠️</div>
+                    <p className="text-muted-foreground">
+                      No bosses selected. Cannot save empty preset.
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Please select at least one boss before saving.
+                    </p>
+                  </div>
+                );
+              }
+
+              return (
+                <div>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    This preset will include the following {selectedBosses.length} boss(es):
+                  </p>
+                  <ScrollArea className="h-48 border rounded p-3">
+                    <div className="space-y-2">
+                      {selectedBosses.map((bossName, index) => (
+                        <div key={bossName} className="flex items-center justify-between gap-2 text-sm">
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 bg-primary/10 rounded flex items-center justify-center text-xs font-semibold">
+                              {index + 1}
+                            </div>
+                            <span className="text-primary font-medium">{bossName}</span>
+                          </div>
+                          <div className="text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded">
+                            PT: {partySizes[bossName] || 1}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    You can apply this preset anytime to quickly select these bosses.
+                  </p>
+                </div>
+              );
+            })()}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowSavePresetDialog(false);
+                setPendingPresetName('');
+                setNewPresetName('');
+                setShowAddPreset(false);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => saveCustomPreset(pendingPresetName)}
+              disabled={getCurrentlySelectedBosses().length === 0}
+              className="btn-hero"
+            >
+              Save Preset
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Card className="card-gaming">
         <CardHeader>
           {mainCharacter && ( 
@@ -961,10 +1843,8 @@ const Roster = () => {
             )
           } 
           <CardTitle className="flex items-center space-x-2">
-          <Trophy className="h-5 w-5 text-amber-400" aria-hidden="true" />
-            <span>Main Character 
-              
-            </span>
+            <Trophy className="h-5 w-5 text-amber-400" aria-hidden="true" />
+            <span>Main Character</span>
           </CardTitle>
         </CardHeader>
 
@@ -980,8 +1860,7 @@ const Roster = () => {
             <div className="flex flex-col">
               {/* Name + Level/Class */}
               <span className="font-semibold text-lg text-white">
-                {mainCharacter.name} 
-                
+                {mainCharacter.name}
               </span>
               <span className="text-sm text-gray-400">
                 Lv. {mainCharacter.level} ({getLevelProgress(mainCharacter.level, mainCharacter.exp)}%) — {mainCharacter.class}
