@@ -7,7 +7,8 @@ import {
   Sword,
   Menu,
   TrendingUp,
-  Server
+  Server,
+  CheckSquare
 } from 'lucide-react';
 import { ServerStatusIndicator } from './ServerStatusIndicator';
 
@@ -18,6 +19,7 @@ const Navigation = () => {
   const navItems = useMemo(() => [
     { name: 'Roster', path: '/', icon: Users },
     { name: 'Boss Tracker', path: '/bosses', icon: Sword },
+    { name: 'Daily Tracker', path: '/tasks', icon: CheckSquare },
     { name: 'Server Status', path: '/server-status', icon: Server },
   ], []);
 
