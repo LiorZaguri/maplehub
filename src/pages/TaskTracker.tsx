@@ -135,6 +135,16 @@ const TaskTracker = () => {
     }
   });
 
+  // Expanded task lists state - tracks which character task lists are expanded
+  const [expandedTaskLists, setExpandedTaskLists] = useState<Set<string>>(() => {
+    try {
+      const stored = localStorage.getItem('maplehub_expanded_task_lists');
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
+
   const taskCategories = [
     'Daily Quest', 'Weekly Quest', 'Event', 'Grinding', 'Collection', 'Other'
   ];
@@ -268,6 +278,15 @@ const TaskTracker = () => {
       console.error('Failed to save hidden characters:', error);
     }
   }, [hiddenCharacters]);
+
+  // Save expanded task lists to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('maplehub_expanded_task_lists', JSON.stringify([...expandedTaskLists]));
+    } catch (error) {
+      console.error('Failed to save expanded task lists:', error);
+    }
+  }, [expandedTaskLists]);
 
   // Real-time clock update every second
   useEffect(() => {
@@ -1122,6 +1141,35 @@ const TaskTracker = () => {
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
+                      {(!isHidden || taskFilter !== 'hidden') && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                          onClick={() => {
+                            setExpandedTaskLists(prev => {
+                              const newSet = new Set(prev);
+                              if (newSet.has(character.name)) {
+                                newSet.delete(character.name);
+                              } else {
+                                newSet.add(character.name);
+                              }
+                              return newSet;
+                            });
+                          }}
+                          title={expandedTaskLists.has(character.name) ? 'Collapse task list' : 'Expand task list'}
+                        >
+                          {expandedTaskLists.has(character.name) ? (
+                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                            </svg>
+                          ) : (
+                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          )}
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         size="sm"
@@ -1200,7 +1248,7 @@ const TaskTracker = () => {
                     </div>
                   )}
                 </CardHeader>
-                <CardContent className="pt-0 max-h-96 overflow-y-auto scrollbar-hide">
+                <CardContent className={`pt-0 ${expandedTaskLists.has(character.name) ? 'max-h-none' : 'max-h-96 overflow-y-auto scrollbar-hide'}`}>
                   {allTasks.length === 0 ? (
                     (!isHidden || taskFilter !== 'hidden') && (
                       <p className="text-sm text-muted-foreground text-center py-4">
