@@ -1363,7 +1363,7 @@ const Roster = () => {
           setSelectedPreset(null);
         }
       }}>
-        <DialogContent className="max-w-4xl w-[95vw] max-h-[95vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-4xl w-[95vw] h-[95vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>
               {pendingBulkNames && pendingBulkNames.length > 1
@@ -1374,9 +1374,9 @@ const Roster = () => {
               Select bosses and configure party sizes for this character. Monthly bosses have no restrictions, while weekly bosses are limited to 14 total.
             </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4 h-full">
             {/* Mobile Layout - Header + Content */}
-            <div className="lg:hidden flex flex-col min-h-0">
+            <div className="lg:hidden flex flex-col min-h-0 flex-1">
               {/* Mobile Header */}
               <div className="bg-background/95 backdrop-blur-sm border border-border rounded-lg p-3 mb-4 flex-shrink-0">
                 {/* Compact Navigation and Presets in one row */}
@@ -1515,7 +1515,7 @@ const Roster = () => {
                     className="w-full"
                   />
                 </div>
-                <ScrollArea className="flex-1 rounded border p-4" style={{ border: '0' }}>
+                <ScrollArea className="flex-1 rounded border p-4 h-[50vh]" style={{ border: '0' }}>
                   <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
                     {([['monthly', filteredGroupedMonthly], ['weekly', filteredGroupedWeekly], ['daily', filteredGroupedDaily]] as const).map(([key, data]) => (
                       <TabsContent key={key} value={key} className="m-0">

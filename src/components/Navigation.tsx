@@ -8,7 +8,8 @@ import {
   Menu,
   TrendingUp,
   Server,
-  CheckSquare
+  CheckSquare,
+  Coffee
 } from 'lucide-react';
 import { ServerStatusIndicator } from './ServerStatusIndicator';
 
@@ -24,7 +25,7 @@ const Navigation = () => {
   ], []);
 
   const NavContent = useMemo(() => () => (
-    <div className="flex flex-col space-y-2 py-4">
+    <div className="flex flex-col h-full">
       <div className="px-4 py-2 mb-4">
         <div className="flex items-center space-x-2">
           <TrendingUp className="h-6 w-6 text-primary" />
@@ -33,31 +34,52 @@ const Navigation = () => {
           </h1>
         </div>
       </div>
-      {navItems.map((item) => {
-        const Icon = item.icon;
-        const isActive = location.pathname === item.path;
 
-        return (
-          <Link
-            key={item.path}
-            to={item.path}
-            className="mx-2"
-            onClick={() => setIsOpen(false)}
-          >
-            <Button
-              variant={isActive ? "default" : "ghost"}
-              className={`w-full justify-start space-x-2 ${
-                isActive
-                  ? 'btn-hero shadow-[var(--shadow-button)]'
-                  : 'hover:bg-card hover:text-primary'
-                }`}
+      <div className="flex-1 space-y-2 pb-4">
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = location.pathname === item.path;
+
+          return (
+            <Link
+              key={item.path}
+              to={item.path}
+              className="mx-2"
+              onClick={() => setIsOpen(false)}
             >
-              <Icon className="h-4 w-4" />
-              <span>{item.name}</span>
-            </Button>
-          </Link>
-        );
-      })}
+              <Button
+                variant={isActive ? "default" : "ghost"}
+                className={`w-full justify-start space-x-2 ${
+                  isActive
+                    ? 'btn-hero shadow-[var(--shadow-button)]'
+                    : 'hover:bg-card hover:text-primary'
+                  }`}
+              >
+                <Icon className="h-4 w-4" />
+                <span>{item.name}</span>
+              </Button>
+            </Link>
+          );
+        })}
+      </div>
+
+      <div className="px-4 py-4 border-t border-border/50 mt-4">
+        <a
+          href="https://buymeacoffee.com/lzaguri10a"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block"
+        >
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full bg-gradient-to-r from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 border-amber-200 hover:border-amber-300 text-amber-800 hover:text-amber-900 shadow-sm hover:shadow-md transition-all duration-200"
+          >
+            <Coffee className="h-4 w-4 mr-2" />
+            Buy me a coffee
+          </Button>
+        </a>
+      </div>
     </div>
   ), [navItems, location.pathname, setIsOpen]);
 
@@ -84,7 +106,7 @@ const Navigation = () => {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-64 p-0 bg-card">
-              <div className="flex flex-col space-y-2 py-4">
+              <div className="flex flex-col h-full">
                 <div className="px-4 py-2 mb-4">
                   <div className="flex items-center space-x-2">
                     <TrendingUp className="h-6 w-6 text-primary" />
@@ -93,31 +115,55 @@ const Navigation = () => {
                     </h1>
                   </div>
                 </div>
-                {navItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = location.pathname === item.path;
+                <div className="sr-only">
+                  <h2>Navigation Menu</h2>
+                </div>
 
-                  return (
-                    <Link
-                      key={item.path}
-                      to={item.path}
-                      className="mx-2"
-                      onClick={() => setIsOpen(false)}
-                    >
-                      <Button
-                        variant={isActive ? "default" : "ghost"}
-                        className={`w-full justify-start space-x-2 ${
-                          isActive
-                            ? 'btn-hero shadow-[var(--shadow-button)]'
-                            : 'hover:bg-card hover:text-primary'
-                        }`}
+                <div className="flex-1 space-y-2 pb-4">
+                  {navItems.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = location.pathname === item.path;
+
+                    return (
+                      <Link
+                        key={item.path}
+                        to={item.path}
+                        className="mx-2"
+                        onClick={() => setIsOpen(false)}
                       >
-                        <Icon className="h-4 w-4" />
-                        <span>{item.name}</span>
-                      </Button>
-                    </Link>
-                  );
-                })}
+                        <Button
+                          variant={isActive ? "default" : "ghost"}
+                          className={`w-full justify-start space-x-2 ${
+                            isActive
+                              ? 'btn-hero shadow-[var(--shadow-button)]'
+                              : 'hover:bg-card hover:text-primary'
+                          }`}
+                        >
+                          <Icon className="h-4 w-4" />
+                          <span>{item.name}</span>
+                        </Button>
+                      </Link>
+                    );
+                  })}
+                </div>
+
+                <div className="px-4 py-4 border-t border-border/50 mt-4">
+                  <a
+                    href="https://buymeacoffee.com/lzaguri10a"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block"
+                  >
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full bg-gradient-to-r from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 border-amber-200 hover:border-amber-300 text-amber-800 hover:text-amber-900 shadow-sm hover:shadow-md transition-all duration-200"
+                    >
+                      <Coffee className="h-4 w-4 mr-2" />
+                      Buy me a coffee
+                    </Button>
+                  </a>
+                </div>
               </div>
             </SheetContent>
           </Sheet>
