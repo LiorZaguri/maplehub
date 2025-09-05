@@ -1294,7 +1294,9 @@ const TaskTracker = () => {
                           <div className={`grid grid-cols-1 gap-1 transition-all duration-300 ease-in-out ${
                             isSectionCollapsed(character.name, 'daily')
                               ? 'max-h-0 opacity-0 overflow-hidden'
-                              : 'max-h-80 opacity-100 overflow-y-auto scrollbar-hide'
+                              : expandedTaskLists.has(character.name)
+                                ? 'max-h-none opacity-100'
+                                : 'max-h-80 opacity-100 overflow-y-auto scrollbar-hide'
                           }`}>
                             {dailyTasks.map((task) => {
                               const isUrsusTask = task.name.toLowerCase().includes('ursus');
@@ -1397,7 +1399,9 @@ const TaskTracker = () => {
                           <div className={`grid grid-cols-1 gap-1 transition-all duration-300 ease-in-out ${
                             isSectionCollapsed(character.name, 'weekly')
                               ? 'max-h-0 opacity-0 overflow-hidden'
-                              : 'max-h-80 opacity-100 overflow-y-auto scrollbar-hide'
+                              : expandedTaskLists.has(character.name)
+                                ? 'max-h-none opacity-100'
+                                : 'max-h-80 opacity-100 overflow-y-auto scrollbar-hide'
                           }`}>
                             {weeklyTasks.map((task) => (
                               <div
@@ -1475,7 +1479,9 @@ const TaskTracker = () => {
                           <div className={`grid grid-cols-1 gap-1 transition-all duration-300 ease-in-out ${
                             isSectionCollapsed(character.name, 'monthly')
                               ? 'max-h-0 opacity-0 overflow-hidden'
-                              : 'max-h-80 opacity-100 overflow-y-auto scrollbar-hide'
+                              : expandedTaskLists.has(character.name)
+                                ? 'max-h-none opacity-100'
+                                : 'max-h-80 opacity-100 overflow-y-auto scrollbar-hide'
                           }`}>
                             {monthlyTasks.map((task) => (
                               <div
