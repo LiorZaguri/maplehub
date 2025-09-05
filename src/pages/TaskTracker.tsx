@@ -579,6 +579,7 @@ const TaskTracker = () => {
     // 9. Legion
     { name: 'Claim Legion Coins', category: 'Legion', frequency: 'daily' as const },
     { name: 'Legion Weekly Dragon Extermination', category: 'Legion', frequency: 'weekly' as const },
+    { name: 'Champion Raid', category: 'Legion', frequency: 'monthly' as const },
 
     // 10. Other Weeklies
     { name: 'Mu Lung Dojo', category: 'Other Weeklies', frequency: 'weekly' as const },
