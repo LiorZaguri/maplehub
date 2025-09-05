@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { listAllBosses, getMaxPartySize } from '@/lib/bossData';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input as UiInput } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -248,10 +248,10 @@ const Roster = () => {
           "partySize": 1,
           "difficulty": "Chaos Zakum"
         },
-        "Easy Cygnus": {
+        "Normal Cygnus": {
           "enabled": true,
           "partySize": 1,
-          "difficulty": "Easy Cygnus"
+          "difficulty": "Normal Cygnus"
         },
         "Chaos Pink Bean": {
           "enabled": true,
@@ -1363,216 +1363,513 @@ const Roster = () => {
           setSelectedPreset(null);
         }
       }}>
-        <DialogContent className="max-w-4xl w-[95vw] max-h-[90vh] overflow-hidden">
+        <DialogContent className="max-w-4xl w-[95vw] max-h-[95vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>
               {pendingBulkNames && pendingBulkNames.length > 1
                 ? `Choose bosses for ${pendingBulkNames.length} characters`
                 : `Choose bosses for ${pendingCharacterName}`}
             </DialogTitle>
+            <DialogDescription>
+              Select bosses and configure party sizes for this character. Monthly bosses have no restrictions, while weekly bosses are limited to 14 total.
+            </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col lg:flex-row gap-4">
-            {/* Compact Sidebar - Navigation Style */}
-            <div className="lg:w-48 lg:flex-shrink-0">
-              <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border border-border rounded-lg p-2">
-                <nav className="space-y-2 py-2">
-                  <Button
-                    onClick={() => setActiveTab('monthly')}
-                    variant={activeTab === 'monthly' ? "default" : "ghost"}
-                    className={`w-full justify-start space-x-2 ${
-                      activeTab === 'monthly'
-                        ? 'btn-hero shadow-[var(--shadow-button)]'
-                        : 'hover:bg-card hover:text-primary'
-                    }`}
-                  >
-                    <Calendar className="h-4 w-4" />
-                    <span>Monthly</span>
-                  </Button>
-                  <Button
-                    onClick={() => setActiveTab('weekly')}
-                    variant={activeTab === 'weekly' ? "default" : "ghost"}
-                    className={`w-full justify-start space-x-2 ${
-                      activeTab === 'weekly'
-                        ? 'btn-hero shadow-[var(--shadow-button)]'
-                        : 'hover:bg-card hover:text-primary'
-                    }`}
-                  >
-                    <BarChart3 className="h-4 w-4" />
-                    <span>Weekly</span>
-                  </Button>
-                  <Button
-                    onClick={() => setActiveTab('daily')}
-                    variant={activeTab === 'daily' ? "default" : "ghost"}
-                    className={`w-full justify-start space-x-2 ${
-                      activeTab === 'daily'
-                        ? 'btn-hero shadow-[var(--shadow-button)]'
-                        : 'hover:bg-card hover:text-primary'
-                    }`}
-                  >
-                    <RotateCcw className="h-4 w-4" />
-                    <span>Daily</span>
-                  </Button>
-                </nav>
-
-                {/* Presets Section */}
-                <div className="mt-6 pt-4 border-t border-border/50">
-                  <div className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
-                    Presets
-                  </div>
-                  <div className="space-y-2">
-                    {editingPreset && (
-                      <div className="text-xs text-primary font-medium mb-2 flex items-center gap-2">
-                        <span>✏️ Editing: {editingPreset}</span>
-                      </div>
-                    )}
-                    {presets.map((preset) => {
-                      const isDefaultPreset = ['NLomien Mule', 'HLotus Mule', 'Ctene Mule'].includes(preset);
-                      const isBeingEdited = editingPreset === preset;
-                      const isEditMode = editingPreset !== null;
-                      return (
-                        <div key={`preset-${preset}`} className="flex items-center gap-1">
-                          <Button
-                            onClick={() => applyPreset(preset)}
-                            variant={selectedPreset === preset ? "default" : "outline"}
-                            size="sm"
-                            className={`flex-1 justify-start text-xs h-8 ${
-                              selectedPreset === preset
-                                ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                                : ''
-                            }`}
-                            disabled={isEditMode && !isBeingEdited}
-                          >
-                            {preset}
-                          </Button>
-                          {!isDefaultPreset && (
-                            <>
-                              <Button
-                                onClick={() => editPreset(preset)}
-                                variant={isBeingEdited ? "default" : "ghost"}
-                                size="sm"
-                                className={`h-8 w-8 p-0 ${
-                                  isBeingEdited
-                                    ? 'text-primary-foreground bg-primary hover:bg-primary/90'
-                                    : 'text-muted-foreground hover:text-primary'
-                                }`}
-                                title={isBeingEdited ? `Finish editing ${preset}` : `Edit ${preset} preset`}
-                              >
-                                {isBeingEdited ? (
-                                  <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                  </svg>
-                                ) : (
-                                  <Pencil className="h-3 w-3" />
-                                )}
-                              </Button>
-                              {isEditMode ? (
-                                <Button
-                                  onClick={() => setEditingPreset(null)}
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-8 w-8 p-0 text-muted-foreground hover:text-orange-500"
-                                  title="Cancel editing and discard changes"
-                                >
-                                  <XIcon className="h-3 w-3" />
-                                </Button>
-                              ) : (
-                                <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-8 w-8 p-0 text-muted-foreground hover:text-red-500"
-                                      title={`Delete ${preset} preset`}
-                                    >
-                                      <XIcon className="h-3 w-3" />
-                                    </Button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>Delete Preset: {preset}</AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                        Are you sure you want to delete the "{preset}" preset? This action cannot be undone.
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                      <AlertDialogAction
-                                        onClick={() => deletePreset(preset)}
-                                        className="bg-red-600 hover:bg-red-700"
-                                      >
-                                        Delete
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
-                              )}
-                            </>
-                          )}
+          <div className="flex flex-col gap-4">
+            {/* Mobile Layout - Header + Content */}
+            <div className="lg:hidden flex flex-col min-h-0">
+              {/* Mobile Header */}
+              <div className="bg-background/95 backdrop-blur-sm border border-border rounded-lg p-3 mb-4 flex-shrink-0">
+                {/* Compact Navigation and Presets in one row */}
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  {/* Tab Selector */}
+                  <Select value={activeTab} onValueChange={(value: 'monthly' | 'weekly' | 'daily') => setActiveTab(value)}>
+                    <SelectTrigger className="w-32 h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="monthly" className="text-xs">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4" />
+                          Monthly
                         </div>
-                      );
-                    })}
+                      </SelectItem>
+                      <SelectItem value="weekly" className="text-xs">
+                        <div className="flex items-center gap-2">
+                          <BarChart3 className="h-4 w-4" />
+                          Weekly
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="daily" className="text-xs">
+                        <div className="flex items-center gap-2">
+                          <RotateCcw className="h-4 w-4" />
+                          Daily
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
 
-                    {/* Add New Preset */}
-                    {showAddPreset ? (
-                      <div className="flex gap-1">
-                        <Input
-                          placeholder="Preset name"
-                          value={newPresetName}
-                          onChange={(e) => setNewPresetName(e.target.value)}
-                          className="h-8 text-xs"
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' && newPresetName.trim()) {
-                              setPendingPresetName(newPresetName.trim());
-                              setShowSavePresetDialog(true);
-                              setShowAddPreset(false);
-                            } else if (e.key === 'Escape') {
-                              setNewPresetName('');
-                              setShowAddPreset(false);
-                            }
-                          }}
-                        />
-                        <Button
-                          onClick={() => {
-                            if (newPresetName.trim()) {
-                              setPendingPresetName(newPresetName.trim());
-                              setShowSavePresetDialog(true);
-                              setShowAddPreset(false);
-                            }
-                          }}
-                          size="sm"
-                          className="h-8 px-2"
-                        >
-                          ✓
-                        </Button>
-                        <Button
-                          onClick={() => {
-                            setNewPresetName('');
-                            setShowAddPreset(false);
-                          }}
-                          variant="outline"
-                          size="sm"
-                          className="h-8 px-2"
-                        >
-                          ✕
-                        </Button>
-                      </div>
-                    ) : (
-                      <Button
-                        onClick={() => setShowAddPreset(true)}
-                        variant="ghost"
-                        size="sm"
-                        className="w-full justify-start text-xs h-8 text-muted-foreground hover:text-primary"
-                      >
-                        + Add Preset
-                      </Button>
-                    )}
-                  </div>
+                  {/* Preset Selector */}
+                  <Select value={selectedPreset || 'none'} onValueChange={(value) => {
+                    if (value && value !== 'none') {
+                      applyPreset(value);
+                    } else {
+                      setSelectedPreset(null);
+                    }
+                  }}>
+                    <SelectTrigger className="w-32 h-8 text-xs">
+                      <SelectValue placeholder="Presets" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none" className="text-xs text-muted-foreground">
+                        Clear selection
+                      </SelectItem>
+                      {presets.map((preset) => (
+                        <SelectItem key={`preset-${preset}`} value={preset} className="text-xs">
+                          {preset}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  {/* Quick Add Preset Button */}
+                  <Button
+                    onClick={() => setShowAddPreset(true)}
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-2 text-xs text-muted-foreground hover:text-primary"
+                  >
+                    +
+                  </Button>
                 </div>
+
+                {/* Editing Status */}
+                {editingPreset && (
+                  <div className="text-xs text-primary font-medium mb-2 flex items-center gap-2">
+                    <span>✏️ Editing: {editingPreset}</span>
+                    <Button
+                      onClick={() => setEditingPreset(null)}
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                )}
+
+                {/* Add Preset Form */}
+                {showAddPreset && (
+                  <div className="flex gap-2 mb-2">
+                    <Input
+                      placeholder="Preset name"
+                      value={newPresetName}
+                      onChange={(e) => setNewPresetName(e.target.value)}
+                      className="h-7 text-xs flex-1"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && newPresetName.trim()) {
+                          setPendingPresetName(newPresetName.trim());
+                          setShowSavePresetDialog(true);
+                          setShowAddPreset(false);
+                        } else if (e.key === 'Escape') {
+                          setNewPresetName('');
+                          setShowAddPreset(false);
+                        }
+                      }}
+                    />
+                    <Button
+                      onClick={() => {
+                        if (newPresetName.trim()) {
+                          setPendingPresetName(newPresetName.trim());
+                          setShowSavePresetDialog(true);
+                          setShowAddPreset(false);
+                        }
+                      }}
+                      size="sm"
+                      className="h-7 px-2"
+                    >
+                      ✓
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        setNewPresetName('');
+                        setShowAddPreset(false);
+                      }}
+                      variant="outline"
+                      size="sm"
+                      className="h-7 px-2"
+                    >
+                      ✕
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {/* Mobile Main Content - Flexible height */}
+              <div className="flex-1 min-h-0">
+                {/* Search Bar */}
+                <div className="mb-4 flex-shrink-0">
+                  <Input
+                    placeholder={`Search ${activeTab} bosses...`}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+                <ScrollArea className="flex-1 rounded border p-4" style={{ border: '0' }}>
+                  <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
+                    {([['monthly', filteredGroupedMonthly], ['weekly', filteredGroupedWeekly], ['daily', filteredGroupedDaily]] as const).map(([key, data]) => (
+                      <TabsContent key={key} value={key} className="m-0">
+                        {data.length === 0 ? (
+                          <div className="text-center py-8 text-muted-foreground">
+                            <p>No {key} bosses found matching your search.</p>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {data.map(([base, variants]) => {
+                              const isSelected = !!baseEnabledByBase[makeGroupKey(key, base)];
+                              const selectedVariant = selectedVariantByBase[makeGroupKey(key, base)] || variants[0]?.name;
+                              const currentVariant = variants.find(v => v.name === selectedVariant) || variants[0];
+                              const partySize = partySizes[currentVariant?.name || ''] || 1;
+                              const mesosShare = currentVariant ? Math.floor(currentVariant.mesos / Math.max(1, partySize)) : 0;
+
+                              return (
+                                <div
+                                  key={`boss-${key}-${base}`}
+                                  className={`relative rounded-lg border-2 transition-all duration-200 hover:shadow-lg ${
+                                    isSelected
+                                      ? 'border-primary bg-primary/5 shadow-md'
+                                      : 'border-border hover:border-primary/50'
+                                  }`}
+                                >
+                                  {/* Selection overlay */}
+                                  {isSelected && (
+                                    <div className="absolute top-2 right-2 z-10">
+                                      <div className="bg-primary text-primary-foreground rounded-full p-1">
+                                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                        </svg>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  <div className="p-4 cursor-pointer" onClick={() => {
+                                    const currentWeeklyCount = Object.values(baseEnabledByBase).filter((enabled, index) => {
+                                      const keys = Object.keys(baseEnabledByBase);
+                                      const key = keys[index];
+                                      return enabled && key.startsWith('weekly:');
+                                    }).length;
+
+                                    const isWeekly = key === 'weekly';
+                                    const isDaily = key === 'daily';
+                                    const wouldExceedLimit = (isWeekly || isDaily) && !isSelected && currentWeeklyCount >= 14;
+
+                                    if (wouldExceedLimit) {
+                                      toast({
+                                        title: "Weekly Boss Limit Reached",
+                                        description: "You've reached the 14 weekly boss limit. Please remove another boss before adding this one.",
+                                        variant: "destructive"
+                                      });
+                                      return;
+                                    }
+
+                                    setBaseEnabledByBase(prev => ({ ...prev, [makeGroupKey(key, base)]: !prev[makeGroupKey(key, base)] }));
+                                  }}>
+                                    {/* Boss Image */}
+                                    <div className="flex justify-center mb-3">
+                                      <div className="relative p-2 bg-gradient-to-br from-background to-muted/20 rounded-lg border border-border/50">
+                                        <img
+                                          src={variants[0].imageUrl}
+                                          alt={base}
+                                          className="h-6 w-6 rounded-sm object-cover border border-border/30"
+                                          style={{
+                                            imageRendering: 'pixelated'
+                                          }}
+                                          onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/placeholder.svg'; }}
+                                        />
+                                        <div className="absolute inset-0 rounded-lg bg-gradient-to-t from-black/5 to-transparent pointer-events-none" />
+                                      </div>
+                                    </div>
+
+                                    {/* Boss Name */}
+                                    <h3 className="font-semibold text-sm text-center mb-2 text-primary truncate">{base}</h3>
+
+                                    {/* Difficulty Selector */}
+                                    <div className="mb-3">
+                                      <Select
+                                        value={selectedVariant}
+                                        onValueChange={(value) => setSelectedVariantByBase(prev => ({ ...prev, [makeGroupKey(key, base)]: value }))}
+                                      >
+                                        <SelectTrigger className="w-full h-8 text-xs">
+                                          <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          {variants.map(v => (
+                                            <SelectItem key={v.name} value={v.name} className="text-xs">
+                                              {v.difficulty}
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+
+                                    {/* Party Size */}
+                                    <div className="flex items-center justify-between mb-2">
+                                      <span className="text-xs text-muted-foreground">Party:</span>
+                                      <div className="flex items-center gap-1">
+                                        <Button
+                                          type="button"
+                                          variant="outline"
+                                          size="sm"
+                                          className="h-6 w-6 p-0"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            const newSize = Math.max(1, partySize - 1);
+                                            setPartySizes(prev => ({ ...prev, [currentVariant?.name || '']: newSize }));
+                                          }}
+                                        >
+                                          -
+                                        </Button>
+                                        <span className="text-xs w-6 text-center">{partySize}</span>
+                                        <Button
+                                          type="button"
+                                          variant="outline"
+                                          size="sm"
+                                          className="h-6 w-6 p-0"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            const maxSize = getMaxPartySize(currentVariant?.name || '');
+                                            const newSize = Math.min(maxSize, partySize + 1);
+                                            setPartySizes(prev => ({ ...prev, [currentVariant?.name || '']: newSize }));
+                                          }}
+                                        >
+                                          +
+                                        </Button>
+                                      </div>
+                                    </div>
+
+                                    {/* Mesos Estimate */}
+                                    <div className="text-center">
+                                      <div className="text-xs text-muted-foreground">Est. Mesos</div>
+                                      <div className="font-semibold text-sm text-primary">
+                                        {mesosShare.toLocaleString()}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </TabsContent>
+                    ))}
+                  </Tabs>
+                </ScrollArea>
               </div>
             </div>
 
-    {/* Main Content - Scrollable Boss Grid */}
-    <div className="flex-1 min-w-0">
+            {/* Desktop Layout - Sidebar and Main Content Side by Side */}
+            <div className="hidden lg:flex lg:flex-row gap-4">
+              {/* Desktop Sidebar */}
+              <div className="w-48 flex-shrink-0">
+                <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border border-border rounded-lg p-2">
+                  <nav className="space-y-2 py-2">
+                    <Button
+                      onClick={() => setActiveTab('monthly')}
+                      variant={activeTab === 'monthly' ? "default" : "ghost"}
+                      className={`w-full justify-start space-x-2 ${
+                        activeTab === 'monthly'
+                          ? 'btn-hero shadow-[var(--shadow-button)]'
+                          : 'hover:bg-card hover:text-primary'
+                      }`}
+                    >
+                      <Calendar className="h-4 w-4" />
+                      <span>Monthly</span>
+                    </Button>
+                    <Button
+                      onClick={() => setActiveTab('weekly')}
+                      variant={activeTab === 'weekly' ? "default" : "ghost"}
+                      className={`w-full justify-start space-x-2 ${
+                        activeTab === 'weekly'
+                          ? 'btn-hero shadow-[var(--shadow-button)]'
+                          : 'hover:bg-card hover:text-primary'
+                      }`}
+                    >
+                      <BarChart3 className="h-4 w-4" />
+                      <span>Weekly</span>
+                    </Button>
+                    <Button
+                      onClick={() => setActiveTab('daily')}
+                      variant={activeTab === 'daily' ? "default" : "ghost"}
+                      className={`w-full justify-start space-x-2 ${
+                        activeTab === 'daily'
+                          ? 'btn-hero shadow-[var(--shadow-button)]'
+                          : 'hover:bg-card hover:text-primary'
+                      }`}
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                      <span>Daily</span>
+                    </Button>
+                  </nav>
+
+                  {/* Presets Section */}
+                  <div className="mt-6 pt-4 border-t border-border/50">
+                    <div className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
+                      Presets
+                    </div>
+                    <div className="space-y-2">
+                      {editingPreset && (
+                        <div className="text-xs text-primary font-medium mb-2 flex items-center gap-2">
+                          <span>✏️ Editing: {editingPreset}</span>
+                        </div>
+                      )}
+                      {presets.map((preset) => {
+                        const isDefaultPreset = ['NLomien Mule', 'HLotus Mule', 'Ctene Mule'].includes(preset);
+                        const isBeingEdited = editingPreset === preset;
+                        const isEditMode = editingPreset !== null;
+                        return (
+                          <div key={`preset-${preset}`} className="flex items-center gap-1">
+                            <Button
+                              onClick={() => applyPreset(preset)}
+                              variant={selectedPreset === preset ? "default" : "outline"}
+                              size="sm"
+                              className={`flex-1 justify-start text-xs h-8 ${
+                                selectedPreset === preset
+                                  ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                                  : ''
+                              }`}
+                              disabled={isEditMode && !isBeingEdited}
+                            >
+                              {preset}
+                            </Button>
+                            {!isDefaultPreset && (
+                              <>
+                                <Button
+                                  onClick={() => editPreset(preset)}
+                                  variant={isBeingEdited ? "default" : "ghost"}
+                                  size="sm"
+                                  className={`h-8 w-8 p-0 ${
+                                    isBeingEdited
+                                      ? 'text-primary-foreground bg-primary hover:bg-primary/90'
+                                      : 'text-muted-foreground hover:text-primary'
+                                  }`}
+                                  title={isBeingEdited ? `Finish editing ${preset}` : `Edit ${preset} preset`}
+                                >
+                                  {isBeingEdited ? (
+                                    <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                  ) : (
+                                    <Pencil className="h-3 w-3" />
+                                  )}
+                                </Button>
+                                {isEditMode ? (
+                                  <Button
+                                    onClick={() => setEditingPreset(null)}
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 w-8 p-0 text-muted-foreground hover:text-orange-500"
+                                    title="Cancel editing and discard changes"
+                                  >
+                                    <XIcon className="h-3 w-3" />
+                                  </Button>
+                                ) : (
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 w-8 p-0 text-muted-foreground hover:text-red-500"
+                                        title={`Delete ${preset} preset`}
+                                      >
+                                        <XIcon className="h-3 w-3" />
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Delete Preset: {preset}</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          Are you sure you want to delete the "{preset}" preset? This action cannot be undone.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction
+                                          onClick={() => deletePreset(preset)}
+                                          className="bg-red-600 hover:bg-red-700"
+                                        >
+                                          Delete
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        );
+                      })}
+
+                      {/* Add New Preset */}
+                      {showAddPreset ? (
+                        <div className="flex gap-1">
+                          <Input
+                            placeholder="Preset name"
+                            value={newPresetName}
+                            onChange={(e) => setNewPresetName(e.target.value)}
+                            className="h-8 text-xs"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && newPresetName.trim()) {
+                                setPendingPresetName(newPresetName.trim());
+                                setShowSavePresetDialog(true);
+                                setShowAddPreset(false);
+                              } else if (e.key === 'Escape') {
+                                setNewPresetName('');
+                                setShowAddPreset(false);
+                              }
+                            }}
+                          />
+                          <Button
+                            onClick={() => {
+                              if (newPresetName.trim()) {
+                                setPendingPresetName(newPresetName.trim());
+                                setShowSavePresetDialog(true);
+                                setShowAddPreset(false);
+                              }
+                            }}
+                            size="sm"
+                            className="h-8 px-2"
+                          >
+                            ✓
+                          </Button>
+                          <Button
+                            onClick={() => {
+                              setNewPresetName('');
+                              setShowAddPreset(false);
+                            }}
+                            variant="outline"
+                            size="sm"
+                            className="h-8 px-2"
+                          >
+                            ✕
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button
+                          onClick={() => setShowAddPreset(true)}
+                          variant="ghost"
+                          size="sm"
+                          className="w-full justify-start text-xs h-8 text-muted-foreground hover:text-primary"
+                        >
+                          + Add Preset
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Main Content - Scrollable Boss Grid */}
+              <div className="flex-1 min-w-0">
               {/* Search Bar */}
               <div className="mb-4">
                 <Input
@@ -1731,6 +2028,7 @@ const Roster = () => {
                   ))}
                 </Tabs>
               </ScrollArea>
+              </div>
             </div>
           </div>
           <DialogFooter className="px-6 py-4 sm:px-6 sm:py-4">
