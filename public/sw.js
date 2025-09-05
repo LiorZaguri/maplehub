@@ -1,6 +1,6 @@
-const CACHE_NAME = 'maplehub-v3';
-const STATIC_CACHE = 'maplehub-static-v3';
-const DYNAMIC_CACHE = 'maplehub-dynamic-v3';
+const CACHE_NAME = 'maplehub-v3.1';
+const STATIC_CACHE = 'maplehub-static-v3.1';
+const DYNAMIC_CACHE = 'maplehub-dynamic-v3.1';
 
 // Get the base path for GitHub Pages
 const getBasePath = () => {

@@ -62,6 +62,41 @@ const Roster = () => {
       return [];
     }
   });
+
+  // Listen for roster changes from localStorage
+  useEffect(() => {
+    const handleStorageChange = () => {
+      try {
+        const stored = localStorage.getItem('maplehub_roster');
+        if (!stored) return;
+        const parsed = JSON.parse(stored) as Array<any>;
+        const updatedCharacters = parsed.map((c) => {
+          const seen = new Set<string>();
+          let id = c.id;
+          if (!id || seen.has(id)) {
+            id = (globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+          }
+          seen.add(id);
+          return { ...c, id };
+        });
+        setCharacters(updatedCharacters);
+      } catch {
+        // ignore
+      }
+    };
+
+    // Listen for storage changes
+    window.addEventListener('storage', handleStorageChange);
+
+    // Also listen for custom events (for same-tab updates)
+    const handleRosterUpdate = () => handleStorageChange();
+    window.addEventListener('rosterUpdate', handleRosterUpdate);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('rosterUpdate', handleRosterUpdate);
+    };
+  }, []);
   const [newCharacterName, setNewCharacterName] = useState('');
   const [bulkNamesInput, setBulkNamesInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -103,6 +138,8 @@ const Roster = () => {
   const [pendingPresetName, setPendingPresetName] = useState('');
   const [editingPreset, setEditingPreset] = useState<string | null>(null);
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
+  const [draggedCharacterId, setDraggedCharacterId] = useState<string | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const makeGroupKey = (category: 'monthly' | 'weekly' | 'daily', base: string) => `${category}:${base}`;
 
   // Get currently selected bosses
@@ -1195,6 +1232,49 @@ const Roster = () => {
       next.splice(newIndex, 0, item);
       return next;
     });
+
+    // Dispatch custom event to notify other components
+    window.dispatchEvent(new CustomEvent('rosterUpdate'));
+  };
+
+  // Drag and drop handlers
+  const handleDragStart = (e: React.DragEvent, characterId: string) => {
+    setDraggedCharacterId(characterId);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragEnd = () => {
+    setDraggedCharacterId(null);
+    setDragOverIndex(null);
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverIndex(index);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverIndex(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    const draggedId = draggedCharacterId;
+    if (!draggedId) return;
+
+    const draggedIndex = characters.findIndex(c => c.id === draggedId);
+    if (draggedIndex === -1 || draggedIndex === dropIndex) return;
+
+    setCharacters(prev => {
+      const next = [...prev];
+      const [draggedItem] = next.splice(draggedIndex, 1);
+      next.splice(dropIndex, 0, draggedItem);
+      return next;
+    });
+
+    setDraggedCharacterId(null);
+    setDragOverIndex(null);
   };
 
   return (
@@ -1243,7 +1323,7 @@ const Roster = () => {
             <Button
               type="submit"                // <-- important
               disabled={isLoading}
-              className="btn-hero w-full sm:w-auto"
+              className="btn-hero w-auto"
             >
               {isLoading ? (
                 <RefreshCw className="h-4 w-4 animate-spin" />
@@ -1933,6 +2013,13 @@ const Roster = () => {
                   onEditBosses={() => openBossEditor(character.name)}
                   onRemove={() => setCharacters(prev => prev.filter(c => c.id !== character.id))}
                   onSetAsMain={setCharacterAsMain}
+                  isDragging={draggedCharacterId === character.id}
+                  isDragOver={dragOverIndex === idx}
+                  onDragStart={handleDragStart}
+                  onDragEnd={handleDragEnd}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
                 />
               )
             ))}

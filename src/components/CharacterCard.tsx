@@ -38,6 +38,14 @@ interface CharacterCardProps {
     percentage: number;
   };
   allBossesChecked?: boolean;
+  // Drag and drop props
+  isDragging?: boolean;
+  isDragOver?: boolean;
+  onDragStart?: (e: React.DragEvent, characterId: string) => void;
+  onDragEnd?: () => void;
+  onDragOver?: (e: React.DragEvent, index: number) => void;
+  onDragLeave?: () => void;
+  onDrop?: (e: React.DragEvent, index: number) => void;
 }
 
 const CharacterCard: React.FC<CharacterCardProps> = ({
@@ -52,12 +60,32 @@ const CharacterCard: React.FC<CharacterCardProps> = ({
   onMoreActions,
   onToggleAllBosses,
   completionStats,
-  allBossesChecked = false
+  allBossesChecked = false,
+  isDragging = false,
+  isDragOver = false,
+  onDragStart,
+  onDragEnd,
+  onDragOver: onDragOverProp,
+  onDragLeave,
+  onDrop
 }) => {
   const pct = getLevelProgress(character.level, character.exp || 0);
 
   return (
-    <div className="border rounded-lg overflow-hidden hover:bg-muted/50 transition-colors">
+    <div
+      className={`border rounded-lg overflow-hidden hover:bg-muted/50 transition-all duration-200 ${
+        isDragging ? 'opacity-50 scale-95' : ''
+      } ${isDragOver ? 'border-primary bg-primary/5' : ''}`}
+      draggable={!!onDragStart}
+      onDragStart={(e) => onDragStart?.(e, character.id)}
+      onDragEnd={onDragEnd}
+      onDragOver={(e) => {
+        e.preventDefault();
+        onDragOverProp?.(e, index);
+      }}
+      onDragLeave={onDragLeave}
+      onDrop={(e) => onDrop?.(e, index)}
+    >
       
       <div className="flex h-4/6">
         {/* Character Image - Left Side (80% height) */}

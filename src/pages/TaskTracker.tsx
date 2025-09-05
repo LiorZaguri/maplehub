@@ -53,7 +53,19 @@ const TaskTracker = () => {
   // Current time state for real-time updates
   const [currentTime, setCurrentTime] = useState(new Date());
 
-  const [characters, setCharacters] = useState<Character[]>([]);
+  const [characters, setCharacters] = useState<Character[]>(() => {
+    try {
+      const stored = localStorage.getItem("maplehub_roster");
+      if (stored) {
+        const parsedCharacters = JSON.parse(stored) as Character[];
+        return parsedCharacters;
+      }
+      return [];
+    } catch (error) {
+      console.error('Failed to load characters:', error);
+      return [];
+    }
+  });
   const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedCharacter, setSelectedCharacter] = useState<string>('');
 
@@ -73,6 +85,10 @@ const TaskTracker = () => {
   const [characterToHide, setCharacterToHide] = useState<string>('');
   const [characterTaskSelections, setCharacterTaskSelections] = useState<Record<string, Record<string, boolean>>>({});
   const [selectedTaskFrequency, setSelectedTaskFrequency] = useState<'daily' | 'weekly' | 'monthly'>('daily');
+  const [showReorderDialog, setShowReorderDialog] = useState(false);
+  const [reorderCharacters, setReorderCharacters] = useState<Character[]>([]);
+  const [draggedCharacterId, setDraggedCharacterId] = useState<string | null>(null);
+
 
   // Task presets - which tasks are enabled for each character
   const [enabledTasksByCharacter, setEnabledTasksByCharacter] = useState<Record<string, Record<string, boolean>>>(() => {
@@ -123,22 +139,66 @@ const TaskTracker = () => {
     'Daily Quest', 'Weekly Quest', 'Event', 'Grinding', 'Collection', 'Other'
   ];
 
-  // Load characters from localStorage (same as BossTracker)
+  // Loading state for character order
+  const [isLoadingOrder, setIsLoadingOrder] = useState(true);
+
+  // Listen for roster changes from localStorage
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem("maplehub_roster");
-      if (stored) {
-        const parsedCharacters = JSON.parse(stored) as Character[];
-        setCharacters(parsedCharacters);
-        if (parsedCharacters.length > 0 && !selectedCharacter) {
-          setSelectedCharacter(parsedCharacters[0].name);
-          setNewTask(prev => ({ ...prev, character: parsedCharacters[0].name }));
+    const handleStorageChange = () => {
+      try {
+        const stored = localStorage.getItem('maplehub_roster');
+        if (!stored) {
+          setIsLoadingOrder(false);
+          return;
         }
+        const parsedCharacters = JSON.parse(stored) as Character[];
+
+        // Load saved character order for TaskTracker
+        const savedOrder = localStorage.getItem('maplehub_tasktracker_character_order');
+        if (savedOrder) {
+          const orderIds = JSON.parse(savedOrder) as string[];
+          // Reorder characters based on saved order
+          const orderedCharacters = orderIds
+            .map(id => parsedCharacters.find(c => c.id === id))
+            .filter(Boolean) as Character[];
+          // Add any new characters that weren't in the saved order
+          const newCharacters = parsedCharacters.filter(c => !orderIds.includes(c.id));
+          setCharacters([...orderedCharacters, ...newCharacters]);
+        } else {
+          // Default order: main character first, then others
+          const mainCharacter = parsedCharacters.find(c => c.isMain);
+          const otherCharacters = parsedCharacters.filter(c => !c.isMain);
+          setCharacters(mainCharacter ? [mainCharacter, ...otherCharacters] : parsedCharacters);
+        }
+        setIsLoadingOrder(false);
+      } catch {
+        setIsLoadingOrder(false);
       }
-    } catch (error) {
-      console.error('Failed to load characters:', error);
-    }
+    };
+
+    // Load initial order on mount
+    handleStorageChange();
+
+    // Listen for storage changes
+    window.addEventListener('storage', handleStorageChange);
+
+    // Also listen for custom events (for same-tab updates)
+    const handleRosterUpdate = () => handleStorageChange();
+    window.addEventListener('rosterUpdate', handleRosterUpdate);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('rosterUpdate', handleRosterUpdate);
+    };
   }, []);
+
+  // Set initial selected character when characters load
+  useEffect(() => {
+    if (characters.length > 0 && !selectedCharacter) {
+      setSelectedCharacter(characters[0].name);
+      setNewTask(prev => ({ ...prev, character: characters[0].name }));
+    }
+  }, [characters, selectedCharacter]);
 
   // Load tasks from localStorage
   useEffect(() => {
@@ -843,6 +903,8 @@ const TaskTracker = () => {
     }
   };
 
+
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -856,6 +918,21 @@ const TaskTracker = () => {
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-2">
+        <Button
+          onClick={() => {
+            // Load current character order for reordering (preserve current order)
+            setReorderCharacters([...characters]);
+            setShowReorderDialog(true);
+          }}
+          variant="outline"
+          size="sm"
+          className="text-muted-foreground hover:text-primary w-full sm:w-auto"
+        >
+              <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+              </svg>
+              Reorder
+            </Button>
             <Button
               onClick={() => resetTasks('daily')}
               variant="outline"
@@ -976,19 +1053,36 @@ const TaskTracker = () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3 sm:gap-4 custom-1920:grid-cols-5">
         {(() => {
-          // Sort characters: main character first, then others in original order (same as BossTracker)
-          const idx = characters.findIndex(c => !!c.isMain);
-          const charactersMainFirst =
-            idx > 0
-              ? [characters[idx], ...characters.slice(0, idx), ...characters.slice(idx + 1)]
-              : characters;
+          // Show loading state while order is loading
+          if (isLoadingOrder) {
+            return Array.from({ length: 6 }, (_, i) => (
+              <Card key={i} className="card-gaming">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-muted rounded animate-pulse" />
+                    <div className="min-w-0 flex-1">
+                      <div className="h-4 bg-muted rounded animate-pulse mb-2" />
+                      <div className="h-3 bg-muted rounded animate-pulse w-3/4" />
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="space-y-2">
+                    {Array.from({ length: 3 }, (_, j) => (
+                      <div key={j} className="h-8 bg-muted rounded animate-pulse" />
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            ));
+          }
 
-          // Apply filtering
-          const filteredCharacters = getFilteredCharacters(charactersMainFirst);
+          // Apply filtering (respect saved order)
+          const filteredCharacters = getFilteredCharacters(characters);
 
           return filteredCharacters
             .filter(character => taskFilter === 'hidden' || !hiddenCharacters.has(character.name))
-            .map((character) => {
+            .map((character, index) => {
             const dailyTasks = getCharacterTasks(character.name, 'daily');
             const weeklyTasks = getCharacterTasks(character.name, 'weekly');
             const monthlyTasks = getCharacterTasks(character.name, 'monthly');
@@ -998,7 +1092,10 @@ const TaskTracker = () => {
             const isHidden = hiddenCharacters.has(character.name);
 
             return (
-              <Card key={character.id} className={`card-gaming ${isHidden && taskFilter === 'hidden' ? 'opacity-60' : ''}`}>
+              <Card
+                key={character.id}
+                className={`card-gaming ${isHidden && taskFilter === 'hidden' ? 'opacity-60' : ''}`}
+              >
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
@@ -1665,6 +1762,126 @@ const TaskTracker = () => {
                 }}
               >
                 Hide Character
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reorder Characters Dialog */}
+      <Dialog open={showReorderDialog} onOpenChange={setShowReorderDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Reorder Characters</DialogTitle>
+            <p className="text-sm text-muted-foreground">
+              Use the up/down buttons to change the order of characters in the Task Tracker
+            </p>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2 max-h-96 overflow-y-auto scrollbar-hide">
+              {reorderCharacters.map((character, index) => (
+                <div
+                  key={character.id}
+                  className="flex items-center gap-3 p-3 border rounded-lg bg-card"
+                >
+                  <div className="flex items-center gap-2 flex-1">
+                    <img
+                      src={character.avatarUrl || '/placeholder.svg'}
+                      alt={character.name}
+                      className="w-8 h-8 rounded object-cover"
+                      onError={(e) => {
+                        const img = e.currentTarget as HTMLImageElement;
+                        img.src = '/placeholder.svg';
+                      }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium truncate">{character.name}</span>
+                        {character.isMain && <Star className="h-3 w-3 text-amber-400 flex-shrink-0" />}
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Lv. {character.level} • {character.class}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="text-sm text-muted-foreground w-8 text-center">#{index + 1}</span>
+                    <div className="flex flex-col gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0"
+                        onClick={() => {
+                          if (index > 0) {
+                            const newOrder = [...reorderCharacters];
+                            [newOrder[index], newOrder[index - 1]] = [newOrder[index - 1], newOrder[index]];
+                            setReorderCharacters(newOrder);
+                          }
+                        }}
+                        disabled={index === 0}
+                      >
+                        <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                        </svg>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0"
+                        onClick={() => {
+                          if (index < reorderCharacters.length - 1) {
+                            const newOrder = [...reorderCharacters];
+                            [newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]];
+                            setReorderCharacters(newOrder);
+                          }
+                        }}
+                        disabled={index === reorderCharacters.length - 1}
+                      >
+                        <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-end gap-2 pt-4 border-t">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowReorderDialog(false);
+                  setReorderCharacters([]);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  // Save the new order to localStorage with a unique key for TaskTracker
+                  const characterOrder = reorderCharacters.map(c => c.id);
+                  localStorage.setItem('maplehub_tasktracker_character_order', JSON.stringify(characterOrder));
+
+                  // Update the characters state to reflect the new order
+                  const orderedCharacters = reorderCharacters.map(char => {
+                    const original = characters.find(c => c.id === char.id);
+                    return original || char;
+                  });
+                  setCharacters(orderedCharacters);
+
+                  setShowReorderDialog(false);
+                  setReorderCharacters([]);
+
+                  toast({
+                    title: "Order Updated",
+                    description: "Character order has been saved for Task Tracker",
+                    className: "progress-complete",
+                    duration: 4000
+                  });
+                }}
+                className="btn-hero"
+              >
+                Save Order
               </Button>
             </div>
           </div>

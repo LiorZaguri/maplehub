@@ -11,7 +11,7 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Sword, Calendar, Trophy, RotateCcw, Pencil, MoreVertical, CheckSquare, XCircle, Filter } from 'lucide-react';
+import { Sword, Calendar, Trophy, RotateCcw, Pencil, MoreVertical, CheckSquare, XCircle, Filter, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import Layout from '@/components/Layout';
@@ -29,6 +29,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { getBossMeta, formatMesos, listAllBosses, getMaxPartySize } from '@/lib/bossData';
 import { getLevelProgress } from '@/lib/levels';
 import CharacterCard from '@/components/CharacterCard';
@@ -129,12 +130,12 @@ const BossTracker = () => {
   // Single combined view (no tabs)
 
   // Load roster from localStorage to render columns per character like the reference
-  const roster: RosterCharacter[] = useMemo(() => {
+  const [roster, setRoster] = useState<RosterCharacter[]>(() => {
     try {
       const stored = localStorage.getItem('maplehub_roster');
       if (!stored) return [];
       const parsed = JSON.parse(stored) as Array<any>;
-      return parsed.map((c) => ({ 
+      return parsed.map((c) => ({
         id: c.id,
         name: c.name,
         class: c.class,
@@ -148,6 +149,69 @@ const BossTracker = () => {
     } catch {
       return [];
     }
+  });
+
+  // Loading state for character order
+  const [isLoadingOrder, setIsLoadingOrder] = useState(true);
+
+  // Listen for roster changes from localStorage
+  useEffect(() => {
+    const handleStorageChange = () => {
+      try {
+        const stored = localStorage.getItem('maplehub_roster');
+        if (!stored) {
+          setIsLoadingOrder(false);
+          return;
+        }
+        const parsed = JSON.parse(stored) as RosterCharacter[];
+
+        // Load saved character order for BossTracker
+        const savedOrder = localStorage.getItem('maplehub_bosstracker_character_order');
+        if (savedOrder) {
+          const orderIds = JSON.parse(savedOrder) as string[];
+          // Reorder characters based on saved order
+          const orderedCharacters = orderIds
+            .map(id => parsed.find(c => c.id === id))
+            .filter(Boolean) as RosterCharacter[];
+          // Add any new characters that weren't in the saved order
+          const newCharacters = parsed.filter(c => !orderIds.includes(c.id)).map((c) => ({
+            id: c.id,
+            name: c.name,
+            class: c.class,
+            level: c.level,
+            avatarUrl: c.avatarUrl,
+            exp: c.exp,
+            isMain: c.isMain,
+            raidPower: c.raidPower,
+            legionLevel: c.legionLevel
+          }));
+          setRoster([...orderedCharacters, ...newCharacters]);
+        } else {
+          // Default order: main character first, then others
+          const mainCharacter = parsed.find(c => c.isMain);
+          const otherCharacters = parsed.filter(c => !c.isMain);
+          setRoster(mainCharacter ? [mainCharacter, ...otherCharacters] : parsed);
+        }
+        setIsLoadingOrder(false);
+      } catch {
+        setIsLoadingOrder(false);
+      }
+    };
+
+    // Load initial order on mount
+    handleStorageChange();
+
+    // Listen for storage changes
+    window.addEventListener('storage', handleStorageChange);
+
+    // Also listen for custom events (for same-tab updates)
+    const handleRosterUpdate = () => handleStorageChange();
+    window.addEventListener('rosterUpdate', handleRosterUpdate);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('rosterUpdate', handleRosterUpdate);
+    };
   }, []);
 
   // progress keyed by character name → bossName → checked
@@ -234,10 +298,14 @@ const BossTracker = () => {
 
   // Filter state for boss display
   const [bossFilter, setBossFilter] = useState<FilterType>('all');
+  const [showReorderDialog, setShowReorderDialog] = useState(false);
+  const [reorderCharacters, setReorderCharacters] = useState<RosterCharacter[]>([]);
+  const [draggedCharacterId, setDraggedCharacterId] = useState<string | null>(null);
 
   // Party size editing state
   const [editingPartySize, setEditingPartySize] = useState<{ characterName: string; bossName: string } | null>(null);
   const [partySizeInput, setPartySizeInput] = useState<string>('');
+
 
   useEffect(() => {
     try {
@@ -753,6 +821,8 @@ const BossTracker = () => {
 
 
 
+
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -764,6 +834,32 @@ const BossTracker = () => {
           <p className="text-muted-foreground mt-1">
             Track weekly and daily boss completions across all characters
           </p>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Button
+            onClick={() => {
+              // Load current character order for reordering (preserve current order)
+              setReorderCharacters([...roster]);
+              setShowReorderDialog(true);
+            }}
+            variant="outline"
+            size="sm"
+            className="text-muted-foreground hover:text-primary w-full sm:w-auto"
+          >
+            <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+            </svg>
+            Reorder
+          </Button>
+          <Button
+            onClick={() => resetAllProgress()}
+            variant="outline"
+            size="sm"
+            className="text-muted-foreground hover:text-primary w-full sm:w-auto"
+          >
+            <RotateCcw className="h-4 w-4 mr-2" />
+            Reset All
+          </Button>
         </div>
       </div>
 
@@ -923,46 +1019,46 @@ const BossTracker = () => {
               <ToggleGroupItem value="unfinished" size="sm">Unfinished</ToggleGroupItem>
             </ToggleGroup>
           </div>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="outline" size="sm" className="text-muted-foreground hover:text-primary">
-                <RotateCcw className="h-4 w-4 mr-2" /> Reset All
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Reset All Boss Progress?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This action will reset all boss completion progress for all characters. This cannot be undone.
-                  Are you sure you want to continue?
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={resetAllProgress} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                  Yes, Reset All
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
-          {roster.length === 0 && (
-            <Card className="card-gaming"><CardContent className="pt-6">Add characters in Roster to start tracking.</CardContent></Card>
-          )}
           {(() => {
-          const bosses = [...weeklyBosses, ...dailyBosses, ...monthlyBosses];
-          const filtered = getFilteredCharacters(roster, bosses);
+            // Show loading state while order is loading
+            if (isLoadingOrder) {
+              return Array.from({ length: 6 }, (_, i) => (
+                <Card key={i} className="card-gaming">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-muted rounded animate-pulse" />
+                      <div className="min-w-0 flex-1">
+                        <div className="h-4 bg-muted rounded animate-pulse mb-2" />
+                        <div className="h-3 bg-muted rounded animate-pulse w-3/4" />
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <div className="space-y-2">
+                      {Array.from({ length: 3 }, (_, j) => (
+                        <div key={j} className="h-8 bg-muted rounded animate-pulse" />
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              ));
+            }
 
-          // move the first isMain to the front, keep others in the same order
-          const idx = filtered.findIndex(c => !!c.isMain);
-          const charactersMainFirst =
-            idx > 0
-              ? [filtered[idx], ...filtered.slice(0, idx), ...filtered.slice(idx + 1)]
-              : filtered;
+            if (roster.length === 0) {
+              return (
+                <Card className="card-gaming">
+                  <CardContent className="pt-6">Add characters in Roster to start tracking.</CardContent>
+                </Card>
+              );
+            }
 
-          return charactersMainFirst.map((c) => {
+            const bosses = [...weeklyBosses, ...dailyBosses, ...monthlyBosses];
+            const filtered = getFilteredCharacters(roster, bosses);
+
+            return filtered.map((c) => {
             const stats = getCompletionStats(c.name, bosses);
             const visibleBosses = bosses.filter((b) => isBossEnabledForCharacter(c.name, b.name));
             // For check all button state, only consider weekly/daily bosses since monthly are excluded from check all
@@ -1181,6 +1277,126 @@ const BossTracker = () => {
         })()}
         </div>
       </div>
+
+      {/* Reorder Characters Dialog */}
+      <Dialog open={showReorderDialog} onOpenChange={setShowReorderDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Reorder Characters</DialogTitle>
+            <p className="text-sm text-muted-foreground">
+              Use the up/down buttons to change the order of characters in the Boss Tracker
+            </p>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2 max-h-96 overflow-y-auto scrollbar-hide">
+              {reorderCharacters.map((character, index) => (
+                <div
+                  key={character.id}
+                  className="flex items-center gap-3 p-3 border rounded-lg bg-card"
+                >
+                  <div className="flex items-center gap-2 flex-1">
+                    <img
+                      src={character.avatarUrl || '/placeholder.svg'}
+                      alt={character.name}
+                      className="w-8 h-8 rounded object-cover"
+                      onError={(e) => {
+                        const img = e.currentTarget as HTMLImageElement;
+                        img.src = '/placeholder.svg';
+                      }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium truncate">{character.name}</span>
+                        {character.isMain && <Star className="h-3 w-3 text-amber-400 flex-shrink-0" />}
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Lv. {character.level} • {character.class}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="text-sm text-muted-foreground w-8 text-center">#{index + 1}</span>
+                    <div className="flex flex-col gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0"
+                        onClick={() => {
+                          if (index > 0) {
+                            const newOrder = [...reorderCharacters];
+                            [newOrder[index], newOrder[index - 1]] = [newOrder[index - 1], newOrder[index]];
+                            setReorderCharacters(newOrder);
+                          }
+                        }}
+                        disabled={index === 0}
+                      >
+                        <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                        </svg>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0"
+                        onClick={() => {
+                          if (index < reorderCharacters.length - 1) {
+                            const newOrder = [...reorderCharacters];
+                            [newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]];
+                            setReorderCharacters(newOrder);
+                          }
+                        }}
+                        disabled={index === reorderCharacters.length - 1}
+                      >
+                        <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-end gap-2 pt-4 border-t">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowReorderDialog(false);
+                  setReorderCharacters([]);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  // Save the new order to localStorage with a unique key for BossTracker
+                  const characterOrder = reorderCharacters.map(c => c.id);
+                  localStorage.setItem('maplehub_bosstracker_character_order', JSON.stringify(characterOrder));
+
+                  // Update the roster state to reflect the new order
+                  const orderedRoster = reorderCharacters.map(char => {
+                    const original = roster.find(c => c.id === char.id);
+                    return original || char;
+                  });
+                  setRoster(orderedRoster);
+
+                  setShowReorderDialog(false);
+                  setReorderCharacters([]);
+
+                  toast({
+                    title: "Order Updated",
+                    description: "Character order has been saved for Boss Tracker",
+                    className: "progress-complete",
+                    duration: 4000
+                  });
+                }}
+                className="btn-hero"
+              >
+                Save Order
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
       </div>
     </Layout>
   );
