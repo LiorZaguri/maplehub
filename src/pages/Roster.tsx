@@ -1363,15 +1363,18 @@ const Roster = () => {
           setSelectedPreset(null);
         }
       }}>
-        <DialogContent className="max-w-4xl w-[95vw] h-[95vh] overflow-hidden flex flex-col">
-          <DialogHeader>
+        <DialogContent className="max-w-4xl w-[95vw] max-h-[95vh] overflow-hidden flex flex-col">
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle>
               {pendingBulkNames && pendingBulkNames.length > 1
                 ? `Choose bosses for ${pendingBulkNames.length} characters`
                 : `Choose bosses for ${pendingCharacterName}`}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="hidden sm:block">
               Select bosses and configure party sizes for this character. Monthly bosses have no restrictions, while weekly bosses are limited to 14 total.
+            </DialogDescription>
+            <DialogDescription className="sm:hidden text-sm">
+              Choose bosses and party sizes. Weekly limit: 14
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-4 h-full">
@@ -2031,7 +2034,7 @@ const Roster = () => {
               </div>
             </div>
           </div>
-          <DialogFooter className="px-6 py-4 sm:px-6 sm:py-4">
+          <DialogFooter className="flex-shrink-0 px-6 py-4 sm:px-6 sm:py-4">
             <div className="flex items-center justify-between w-full">
               <div className="flex flex-col">
                 <div className="text-sm text-muted-foreground">
