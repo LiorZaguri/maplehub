@@ -57,6 +57,20 @@ const Roster = () => {
       if (withIds.some((c, i) => c.id !== stored[i]?.id)) {
         localStorage.setItem("maplehub_roster", JSON.stringify(withIds));
       }
+
+      // Load saved character order for Roster
+      const savedOrder = localStorage.getItem('maplehub_roster_character_order');
+      if (savedOrder) {
+        const orderIds = JSON.parse(savedOrder) as string[];
+        // Reorder characters based on saved order
+        const orderedCharacters = orderIds
+          .map(id => withIds.find(c => c.id === id))
+          .filter(Boolean) as Character[];
+        // Add any new characters that weren't in the saved order
+        const newCharacters = withIds.filter(c => !orderIds.includes(c.id));
+        return [...orderedCharacters, ...newCharacters];
+      }
+
       return withIds;
     } catch {
       return [];
@@ -79,7 +93,21 @@ const Roster = () => {
           seen.add(id);
           return { ...c, id };
         });
-        setCharacters(updatedCharacters);
+
+        // Load saved character order for Roster
+        const savedOrder = localStorage.getItem('maplehub_roster_character_order');
+        if (savedOrder) {
+          const orderIds = JSON.parse(savedOrder) as string[];
+          // Reorder characters based on saved order
+          const orderedCharacters = orderIds
+            .map(id => updatedCharacters.find(c => c.id === id))
+            .filter(Boolean) as Character[];
+          // Add any new characters that weren't in the saved order
+          const newCharacters = updatedCharacters.filter(c => !orderIds.includes(c.id));
+          setCharacters([...orderedCharacters, ...newCharacters]);
+        } else {
+          setCharacters(updatedCharacters);
+        }
       } catch {
         // ignore
       }
@@ -138,8 +166,6 @@ const Roster = () => {
   const [pendingPresetName, setPendingPresetName] = useState('');
   const [editingPreset, setEditingPreset] = useState<string | null>(null);
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
-  const [draggedCharacterId, setDraggedCharacterId] = useState<string | null>(null);
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const makeGroupKey = (category: 'monthly' | 'weekly' | 'daily', base: string) => `${category}:${base}`;
 
   // Get currently selected bosses
@@ -1230,52 +1256,16 @@ const Roster = () => {
       if (newIndex < 0 || newIndex >= next.length) return prev;
       const [item] = next.splice(index, 1);
       next.splice(newIndex, 0, item);
+
+      // Save the new character order to localStorage
+      const characterOrder = next.map(c => c.id);
+      localStorage.setItem('maplehub_roster_character_order', JSON.stringify(characterOrder));
+
       return next;
     });
-
-    // Dispatch custom event to notify other components
-    window.dispatchEvent(new CustomEvent('rosterUpdate'));
   };
 
-  // Drag and drop handlers
-  const handleDragStart = (e: React.DragEvent, characterId: string) => {
-    setDraggedCharacterId(characterId);
-    e.dataTransfer.effectAllowed = 'move';
-  };
 
-  const handleDragEnd = () => {
-    setDraggedCharacterId(null);
-    setDragOverIndex(null);
-  };
-
-  const handleDragOver = (e: React.DragEvent, index: number) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    setDragOverIndex(index);
-  };
-
-  const handleDragLeave = () => {
-    setDragOverIndex(null);
-  };
-
-  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
-    e.preventDefault();
-    const draggedId = draggedCharacterId;
-    if (!draggedId) return;
-
-    const draggedIndex = characters.findIndex(c => c.id === draggedId);
-    if (draggedIndex === -1 || draggedIndex === dropIndex) return;
-
-    setCharacters(prev => {
-      const next = [...prev];
-      const [draggedItem] = next.splice(draggedIndex, 1);
-      next.splice(dropIndex, 0, draggedItem);
-      return next;
-    });
-
-    setDraggedCharacterId(null);
-    setDragOverIndex(null);
-  };
 
   return (
     <div className="space-y-6">
@@ -2001,28 +1991,22 @@ const Roster = () => {
         <CardContent>
           {/* Character Cards - Responsive Grid Layout */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {characters.map((character, idx) => (
-              !character.isMain && (
+            {characters
+              .map((character, fullIndex) => ({ character, fullIndex }))
+              .filter(({ character }) => !character.isMain)
+              .map(({ character, fullIndex }, filteredIndex) => (
                 <CharacterCard
                   key={character.id}
                   character={character}
                   variant="roster"
-                  index={idx}
-                  onMoveUp={() => moveCharacter(idx, -1)}
-                  onMoveDown={() => moveCharacter(idx, 1)}
+                  index={filteredIndex}
+                  onMoveUp={() => moveCharacter(fullIndex, -1)}
+                  onMoveDown={() => moveCharacter(fullIndex, 1)}
                   onEditBosses={() => openBossEditor(character.name)}
                   onRemove={() => setCharacters(prev => prev.filter(c => c.id !== character.id))}
                   onSetAsMain={setCharacterAsMain}
-                  isDragging={draggedCharacterId === character.id}
-                  isDragOver={dragOverIndex === idx}
-                  onDragStart={handleDragStart}
-                  onDragEnd={handleDragEnd}
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
                 />
-              )
-            ))}
+              ))}
           </div>
         </CardContent>
       </Card>

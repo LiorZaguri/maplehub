@@ -1153,6 +1153,8 @@ const BossTracker = () => {
                                     <div onClick={(e) => e.stopPropagation()}>
                                       {editingPartySize?.characterName === c.name && editingPartySize?.bossName === b.name ? (
                                         <input
+                                          id={`party-size-${c.name}-${b.name}`}
+                                          name={`party-size-${c.name}-${b.name}`}
                                           type="number"
                                           value={partySizeInput}
                                           onChange={(e) => setPartySizeInput(e.target.value)}
@@ -1241,6 +1243,8 @@ const BossTracker = () => {
                                   <div onClick={(e) => e.stopPropagation()}>
                                     {editingPartySize?.characterName === c.name && editingPartySize?.bossName === b.name ? (
                                       <input
+                                        id={`party-size-mobile-${c.name}-${b.name}`}
+                                        name={`party-size-mobile-${c.name}-${b.name}`}
                                         type="number"
                                         value={partySizeInput}
                                         onChange={(e) => setPartySizeInput(e.target.value)}
