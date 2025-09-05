@@ -40,7 +40,7 @@ const App = () => (
       <Sonner />
       <ServerStatusNotifier />
       {/* Desktop Server Status Indicator - Completely independent of routing */}
-      <div className="hidden md:block fixed left-0 bottom-0 w-64 z-50">
+      <div className="hidden xl:block fixed left-0 bottom-0 w-64 z-50">
         <ServerStatusIndicator />
       </div>
       <HashRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>

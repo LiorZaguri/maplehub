@@ -64,12 +64,12 @@ const Navigation = () => {
   return (
     <>
       {/* Desktop Navigation */}
-      <nav className="hidden md:block w-64 min-h-screen card-gaming fixed left-0 top-0 z-40">
+      <nav className="hidden xl:block w-64 min-h-screen card-gaming fixed left-0 top-0 z-40">
         <NavContent />
       </nav>
 
       {/* Mobile Navigation */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-card border-b border-border h-20">
+      <div className="xl:hidden fixed top-0 left-0 right-0 z-50 bg-card border-b border-border h-20">
         <div className="flex items-center justify-between p-3 sm:p-4 h-full">
           <div className="flex items-center space-x-2">
             <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />

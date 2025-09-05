@@ -185,4 +185,11 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;  /* Safari and Chrome */
   }
+
+  /* Custom 1920px breakpoint for 5 columns */
+  @media (min-width: 1920px) {
+    .custom-1920\:grid-cols-5 {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+  }
 }

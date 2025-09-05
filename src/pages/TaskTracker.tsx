@@ -161,7 +161,8 @@ const TaskTracker = () => {
           toast({
             title: "Tasks Cleaned Up",
             description: `Removed ${loadedTasks.length - validTasks.length} invalid task(s)`,
-            className: "progress-complete"
+            className: "progress-complete",
+            duration: 4000
           });
         }
 
@@ -208,13 +209,15 @@ const TaskTracker = () => {
     }
   }, [hiddenCharacters]);
 
-  // Real-time clock update every minute
+  // Real-time clock update every second
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentTime(new Date());
       // Check for expired tasks every minute
-      checkAndResetExpiredTasks();
-    }, 60000); // Update every 60 seconds (1 minute)
+      if (new Date().getSeconds() === 0) {
+        checkAndResetExpiredTasks();
+      }
+    }, 1000); // Update every 1 second
 
     return () => clearInterval(interval); // Cleanup on unmount
   }, []);
@@ -327,7 +330,8 @@ const TaskTracker = () => {
       toast({
         title: "Tasks Applied",
         description: `Added ${newTasks.length} task(s) for ${characterName}`,
-        className: "progress-complete"
+        className: "progress-complete",
+        duration: 4000
       });
     }
   };
@@ -342,7 +346,8 @@ const TaskTracker = () => {
       toast({
         title: task.completed ? "Task Unmarked" : "Task Completed",
         description: `${task.name} for ${task.character}`,
-        className: task.completed ? "progress-incomplete" : "progress-complete"
+        className: task.completed ? "progress-incomplete" : "progress-complete",
+        duration: 4000
       });
     }
   };
@@ -352,7 +357,8 @@ const TaskTracker = () => {
       toast({
         title: "Error",
         description: "Please enter a task name",
-        variant: "destructive"
+        variant: "destructive",
+        duration: 4000
       });
       return;
     }
@@ -361,7 +367,8 @@ const TaskTracker = () => {
       toast({
         title: "Error",
         description: "Please select a character",
-        variant: "destructive"
+        variant: "destructive",
+        duration: 4000
       });
       return;
     }
@@ -380,7 +387,8 @@ const TaskTracker = () => {
     toast({
       title: "Task Added",
       description: `${task.name} added for ${task.character}`,
-      className: "progress-complete"
+      className: "progress-complete",
+      duration: 4000
     });
   };
 
@@ -392,7 +400,8 @@ const TaskTracker = () => {
     toast({
       title: `${frequency} Reset`,
       description: `All ${frequency} tasks have been reset!`,
-      className: "progress-complete"
+      className: "progress-complete",
+      duration: 4000
     });
   };
 
@@ -545,7 +554,8 @@ const TaskTracker = () => {
     toast({
       title: "Task Added",
       description: `${template.name} added for ${characterName}`,
-      className: "progress-complete"
+      className: "progress-complete",
+      duration: 4000
     });
   };
 
@@ -587,7 +597,7 @@ const TaskTracker = () => {
       nextReset.setUTCDate(nextReset.getUTCDate() + 1); // Add one day
       nextReset.setUTCHours(0, 0, 0, 0); // Set to midnight UTC
       const timeDiff = nextReset.getTime() - utcNow.getTime();
-      return Math.max(0, Math.floor(timeDiff / (1000 * 60))); // Minutes remaining
+      return Math.max(0, Math.floor(timeDiff / 1000)); // Seconds remaining
     } else if (frequency === 'weekly') {
       // Weekly reset Wednesday to Thursday at UTC
       const currentDay = utcNow.getUTCDay(); // 0 = Sunday, 3 = Wednesday, 4 = Thursday
@@ -611,12 +621,12 @@ const TaskTracker = () => {
         daysUntilReset = 3 + (7 - currentDay);
       }
 
-      // Calculate total minutes until reset
+      // Calculate total seconds until reset
       const nextReset = new Date(utcNow);
       nextReset.setUTCDate(nextReset.getUTCDate() + daysUntilReset);
       nextReset.setUTCHours(0, 0, 0, 0); // Reset at midnight UTC
       const timeDiff = nextReset.getTime() - utcNow.getTime();
-      return Math.max(0, Math.floor(timeDiff / (1000 * 60))); // Minutes remaining
+      return Math.max(0, Math.floor(timeDiff / 1000)); // Seconds remaining
     } else if (frequency === 'monthly') {
       // Monthly reset: last day of month to 1st of next month at UTC+0
       const currentYear = utcNow.getUTCFullYear();
@@ -626,7 +636,7 @@ const TaskTracker = () => {
       if (utcNow.getTime() <= lastDayOfMonth.getTime()) {
         // Still in current month, reset at end of month
         const timeDiff = lastDayOfMonth.getTime() - utcNow.getTime();
-        return Math.max(0, Math.floor(timeDiff / (1000 * 60))); // Minutes remaining
+        return Math.max(0, Math.floor(timeDiff / 1000)); // Seconds remaining
       } else {
         // Already past end of month, calculate to end of next month
         const nextMonth = currentMonth + 1;
@@ -634,7 +644,7 @@ const TaskTracker = () => {
         const actualNextMonth = nextMonth > 11 ? 0 : nextMonth;
         const lastDayOfNextMonth = new Date(Date.UTC(nextYear, actualNextMonth + 1, 0, 23, 59, 59, 999));
         const timeDiff = lastDayOfNextMonth.getTime() - utcNow.getTime();
-        return Math.max(0, Math.floor(timeDiff / (1000 * 60))); // Minutes remaining
+        return Math.max(0, Math.floor(timeDiff / 1000)); // Seconds remaining
       }
     }
 
@@ -642,47 +652,32 @@ const TaskTracker = () => {
   };
 
   // Format time remaining
-  const formatTimeRemaining = (minutes: number, frequency: 'daily' | 'weekly' | 'monthly') => {
-    if (frequency === 'daily') {
-      if (minutes < 60) return `${minutes}m`;
-      const hours = Math.floor(minutes / 60);
-      const remainingMinutes = minutes % 60;
-      if (remainingMinutes === 0) return `${hours}h`;
-      return `${hours}h ${remainingMinutes}m`;
-    } else if (frequency === 'weekly') {
-      const days = Math.floor(minutes / (60 * 24));
-      const hours = Math.floor((minutes % (60 * 24)) / 60);
-      const remainingMinutes = minutes % 60;
+  const formatTimeRemaining = (seconds: number, frequency: 'daily' | 'weekly' | 'monthly') => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    const days = Math.floor(minutes / (60 * 24));
+    const remainingHours = Math.floor((minutes % (60 * 24)) / 60);
 
-      if (days > 0) {
-        if (hours === 0 && remainingMinutes === 0) return `${days}d`;
-        if (hours === 0) return `${days}d ${remainingMinutes}m`;
-        if (remainingMinutes === 0) return `${days}d ${hours}h`;
-        return `${days}d ${hours}h ${remainingMinutes}m`;
-      } else if (hours > 0) {
-        if (remainingMinutes === 0) return `${hours}h`;
-        return `${hours}h ${remainingMinutes}m`;
-      } else {
-        return `${remainingMinutes}m`;
-      }
-    } else if (frequency === 'monthly') {
-      const days = Math.floor(minutes / (60 * 24));
-      const hours = Math.floor((minutes % (60 * 24)) / 60);
-      const remainingMinutes = minutes % 60;
-
-      if (days > 0) {
-        if (hours === 0 && remainingMinutes === 0) return `${days}d`;
-        if (hours === 0) return `${days}d ${remainingMinutes}m`;
-        if (remainingMinutes === 0) return `${days}d ${hours}h`;
-        return `${days}d ${hours}h ${remainingMinutes}m`;
-      } else if (hours > 0) {
-        if (remainingMinutes === 0) return `${hours}h`;
-        return `${hours}h ${remainingMinutes}m`;
-      } else {
-        return `${remainingMinutes}m`;
-      }
+    // If days > 0, don't show seconds (max 3 values: days, hours, minutes)
+    if (days > 0) {
+      if (remainingHours === 0 && remainingMinutes === 0) return `${days}d`;
+      if (remainingHours === 0) return `${days}d ${remainingMinutes}m`;
+      if (remainingMinutes === 0) return `${days}d ${remainingHours}h`;
+      return `${days}d ${remainingHours}h ${remainingMinutes}m`;
     }
-    return '';
+
+    // If days = 0, show seconds (max 3 values: hours, minutes, seconds)
+    if (hours > 0) {
+      if (remainingMinutes === 0 && remainingSeconds === 0) return `${hours}h`;
+      if (remainingMinutes === 0) return `${hours}h ${remainingSeconds}s`;
+      if (remainingSeconds === 0) return `${hours}h ${remainingMinutes}m`;
+      return `${hours}h ${remainingMinutes}m ${remainingSeconds}s`;
+    } else {
+      if (remainingSeconds === 0) return `${remainingMinutes}m`;
+      return `${remainingMinutes}m ${remainingSeconds}s`;
+    }
   };
 
   // Check if current time is Ursus golden time
@@ -692,6 +687,55 @@ const TaskTracker = () => {
 
     // Golden time: 1:00 AM - 3:00 AM UTC (1-3) and 6:00 PM - 8:00 PM UTC (18-20)
     return (utcHour >= 1 && utcHour < 3) || (utcHour >= 18 && utcHour < 20);
+  };
+
+  // Get remaining time until Ursus golden time ends
+  const getUrsusGoldenTimeRemaining = () => {
+    const now = new Date();
+    const utcHour = now.getUTCHours();
+    const utcMinute = now.getUTCMinutes();
+    const utcSecond = now.getUTCSeconds();
+
+    let endHour: number;
+    let endMinute: number;
+
+    if (utcHour >= 1 && utcHour < 3) {
+      // Currently in 1-3 AM window, ends at 3:00 AM
+      endHour = 3;
+      endMinute = 0;
+    } else if (utcHour >= 18 && utcHour < 20) {
+      // Currently in 6-8 PM window, ends at 8:00 PM
+      endHour = 20;
+      endMinute = 0;
+    } else {
+      return null; // Not in golden time
+    }
+
+    // Calculate remaining time in seconds
+    const nowSeconds = utcHour * 3600 + utcMinute * 60 + utcSecond;
+    const endSeconds = endHour * 3600 + endMinute * 60;
+    const remainingSeconds = endSeconds - nowSeconds;
+
+    if (remainingSeconds <= 0) return null;
+
+    const minutes = Math.floor(remainingSeconds / 60);
+    const seconds = remainingSeconds % 60;
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+
+    // Ursus golden time is always short (max 2 hours), so days will always be 0
+    // Always show hours, minutes, seconds for precision during golden time
+    if (hours > 0) {
+      if (remainingMinutes === 0 && seconds === 0) return `${hours}h`;
+      if (remainingMinutes === 0) return `${hours}h ${seconds}s`;
+      if (seconds === 0) return `${hours}h ${remainingMinutes}m`;
+      return `${hours}h ${remainingMinutes}m ${seconds}s`;
+    } else if (remainingMinutes > 0) {
+      if (seconds === 0) return `${remainingMinutes}m`;
+      return `${remainingMinutes}m ${seconds}s`;
+    } else {
+      return `${seconds}s`;
+    }
   };
 
   // Get next Ursus golden time
@@ -744,13 +788,19 @@ const TaskTracker = () => {
     const timeDiff = nextTime.getTime() - utcNow.getTime();
     const hours = Math.floor(timeDiff / (1000 * 60 * 60));
     const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
 
+    // Since "until next golden time" will never have days, always show seconds
     if (hours > 0) {
-      return `${hours}h ${minutes}m`;
+      if (minutes === 0 && seconds === 0) return `${hours}h`;
+      if (minutes === 0) return `${hours}h ${seconds}s`;
+      if (seconds === 0) return `${hours}h ${minutes}m`;
+      return `${hours}h ${minutes}m ${seconds}s`;
     } else if (minutes > 0) {
-      return `${minutes}m`;
+      if (seconds === 0) return `${minutes}m`;
+      return `${minutes}m ${seconds}s`;
     } else {
-      return '< 1m';
+      return `${seconds}s`;
     }
   };
 
@@ -828,7 +878,7 @@ const TaskTracker = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 sm:gap-4 pt-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 pt-6">
         <Card className="card-glow">
           <CardContent className="pt-6">
             <div className="flex items-center space-x-2">
@@ -883,7 +933,7 @@ const TaskTracker = () => {
               </div>
               <div>
                 <p className={`text-2xl font-bold ${isUrsusGoldenTime() ? 'text-yellow-600' : 'text-muted-foreground'}`}>
-                  {isUrsusGoldenTime() ? 'ACTIVE' : formatGoldenTimeRemaining()}
+                  {isUrsusGoldenTime() ? getUrsusGoldenTimeRemaining() || 'ACTIVE' : formatGoldenTimeRemaining()}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
                   {isUrsusGoldenTime() ? '2x Mesos!' : 'Until Ursus Golden Time'}
@@ -924,7 +974,7 @@ const TaskTracker = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3 sm:gap-4 custom-1920:grid-cols-5">
         {(() => {
           // Sort characters: main character first, then others in original order (same as BossTracker)
           const idx = characters.findIndex(c => !!c.isMain);
@@ -1087,6 +1137,9 @@ const TaskTracker = () => {
                               <Badge variant="secondary" className="text-xs px-1.5 py-0.5 h-4">
                                 {dailyTasks.filter(t => t.completed).length}/{dailyTasks.length}
                               </Badge>
+                              <span className="text-xs text-muted-foreground">
+                                {dailyTasks.length > 0 ? Math.round((dailyTasks.filter(t => t.completed).length / dailyTasks.length) * 100) : 0}%
+                              </span>
                             </div>
                             <span className="text-xs text-muted-foreground">
                               {formatTimeRemaining(getTimeUntilReset('daily'), 'daily')}
@@ -1149,13 +1202,7 @@ const TaskTracker = () => {
                                     </div>
                                     <Badge
                                       variant="outline"
-                                      className={`text-xs px-1.5 py-0.5 h-4 flex-shrink-0 ${
-                                        task.category === 'Daily Bosses' ? 'bg-red-50 text-red-700 border-red-200' :
-                                        task.category === 'Event' ? 'bg-purple-50 text-purple-700 border-purple-200' :
-                                        task.category === 'Sacred Symbol Dailies' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                                        task.category === 'Arcane Symbol Dailies' ? 'bg-green-50 text-green-700 border-green-200' :
-                                        'bg-gray-50 text-gray-700 border-gray-200'
-                                      }`}
+                                      className="text-xs px-1.5 py-0.5 h-4 flex-shrink-0 bg-gray-50 text-gray-700 border-gray-200"
                                     >
                                       {task.category.replace('Dailies', '').replace('Symbol ', '').replace('Daily ', '').trim()}
                                     </Badge>
@@ -1193,6 +1240,9 @@ const TaskTracker = () => {
                               <Badge variant="secondary" className="text-xs px-1.5 py-0.5 h-4">
                                 {weeklyTasks.filter(t => t.completed).length}/{weeklyTasks.length}
                               </Badge>
+                              <span className="text-xs text-muted-foreground">
+                                {weeklyTasks.length > 0 ? Math.round((weeklyTasks.filter(t => t.completed).length / weeklyTasks.length) * 100) : 0}%
+                              </span>
                             </div>
                             <span className="text-xs text-muted-foreground">
                               {formatTimeRemaining(getTimeUntilReset('weekly'), 'weekly')}
@@ -1234,14 +1284,7 @@ const TaskTracker = () => {
                                   </span>
                                   <Badge
                                     variant="outline"
-                                    className={`text-xs px-1.5 py-0.5 h-4 flex-shrink-0 ${
-                                      task.category === 'Arcane Symbol Weeklies' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
-                                      task.category === 'Guild' ? 'bg-orange-50 text-orange-700 border-orange-200' :
-                                      task.category === 'Legion' ? 'bg-cyan-50 text-cyan-700 border-cyan-200' :
-                                      task.category === 'Other Weeklies' ? 'bg-pink-50 text-pink-700 border-pink-200' :
-                                      task.category === 'Threads of Fate' ? 'bg-violet-50 text-violet-700 border-violet-200' :
-                                      'bg-gray-50 text-gray-700 border-gray-200'
-                                    }`}
+                                    className="text-xs px-1.5 py-0.5 h-4 flex-shrink-0 bg-gray-50 text-gray-700 border-gray-200"
                                   >
                                     {task.category.replace('Weeklies', '').replace('Weekly ', '').replace('Symbol ', '').trim()}
                                   </Badge>
@@ -1319,10 +1362,7 @@ const TaskTracker = () => {
                                   </span>
                                   <Badge
                                     variant="outline"
-                                    className={`text-xs px-1.5 py-0.5 h-4 flex-shrink-0 ${
-                                      task.category === 'Monthly Bosses' ? 'bg-red-50 text-red-700 border-red-200' :
-                                      'bg-gray-50 text-gray-700 border-gray-200'
-                                    }`}
+                                    className="text-xs px-1.5 py-0.5 h-4 flex-shrink-0 bg-gray-50 text-gray-700 border-gray-200"
                                   >
                                     {task.category.replace('Monthly ', '').trim()}
                                   </Badge>
@@ -1350,7 +1390,7 @@ const TaskTracker = () => {
               Choose Tasks for {selectedCharacterForTasks}
             </DialogTitle>
           </DialogHeader>
-          <div className="flex flex-col lg:flex-row gap-4">
+          <div className="flex flex-col md:flex-row gap-4">
             {/* Task Categories Sidebar */}
             <div className="lg:w-48 lg:flex-shrink-0">
               <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border border-border rounded-lg p-2">
@@ -1410,7 +1450,8 @@ const TaskTracker = () => {
                           toast({
                             title: "Preset Saved",
                             description: `"${presetName.trim()}" preset created`,
-                            className: "progress-complete"
+                            className: "progress-complete",
+                            duration: 4000
                           });
                         }
                       }}
@@ -1450,7 +1491,8 @@ const TaskTracker = () => {
                                 toast({
                                   title: "Preset Loaded",
                                   description: `"${presetName}" preset applied`,
-                                  className: "progress-complete"
+                                  className: "progress-complete",
+                                  duration: 4000
                                 });
                               }}
                             >
@@ -1471,7 +1513,8 @@ const TaskTracker = () => {
                                   toast({
                                     title: "Preset Deleted",
                                     description: `"${presetName}" preset removed`,
-                                    className: "progress-incomplete"
+                                    className: "progress-incomplete",
+                                    duration: 4000
                                   });
                                 }
                               }}
@@ -1616,7 +1659,8 @@ const TaskTracker = () => {
                   toast({
                     title: "Character Hidden",
                     description: `${characterToHide} has been hidden from the task tracker`,
-                    className: "progress-incomplete"
+                    className: "progress-incomplete",
+                    duration: 4000
                   });
                 }}
               >
