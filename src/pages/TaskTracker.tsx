@@ -212,9 +212,84 @@ const TaskTracker = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentTime(new Date());
+      // Check for expired tasks every minute
+      checkAndResetExpiredTasks();
     }, 60000); // Update every 60 seconds (1 minute)
 
     return () => clearInterval(interval); // Cleanup on unmount
+  }, []);
+
+  // Check for expired tasks and reset them
+  const checkAndResetExpiredTasks = () => {
+    const now = new Date();
+    const today = now.toISOString().split('T')[0]; // YYYY-MM-DD format
+
+    setTasks(prevTasks => {
+      let hasChanges = false;
+      const updatedTasks = prevTasks.map(task => {
+        // Skip if task is not completed
+        if (!task.completed) return task;
+
+        const taskDueDate = new Date(task.dueDate);
+        const isExpired = taskDueDate < now;
+
+        if (isExpired) {
+          hasChanges = true;
+
+          // Calculate new due date based on frequency
+          let newDueDate: string;
+
+          if (task.frequency === 'daily') {
+            // For daily tasks, set to tomorrow
+            const tomorrow = new Date(now);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            newDueDate = tomorrow.toISOString().split('T')[0];
+          } else if (task.frequency === 'weekly') {
+            // For weekly tasks, set to next Wednesday (UTC reset day)
+            const nextWednesday = new Date(now);
+            const currentDay = nextWednesday.getUTCDay(); // 0 = Sunday, 3 = Wednesday
+
+            if (currentDay < 3) {
+              // Before Wednesday, next Wednesday
+              nextWednesday.setUTCDate(nextWednesday.getUTCDate() + (3 - currentDay));
+            } else if (currentDay === 3) {
+              // It's Wednesday, next Wednesday
+              nextWednesday.setUTCDate(nextWednesday.getUTCDate() + 7);
+            } else {
+              // After Wednesday, next Wednesday
+              nextWednesday.setUTCDate(nextWednesday.getUTCDate() + (3 + (7 - currentDay)));
+            }
+            newDueDate = nextWednesday.toISOString().split('T')[0];
+          } else if (task.frequency === 'monthly') {
+            // For monthly tasks, set to next month
+            const nextMonth = new Date(now);
+            nextMonth.setMonth(nextMonth.getMonth() + 1);
+            newDueDate = nextMonth.toISOString().split('T')[0];
+          } else {
+            // Fallback to tomorrow
+            const tomorrow = new Date(now);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            newDueDate = tomorrow.toISOString().split('T')[0];
+          }
+
+          return {
+            ...task,
+            completed: false, // Reset to incomplete
+            dueDate: newDueDate // Update due date
+          };
+        }
+
+        return task;
+      });
+
+      // Only update state if there were changes
+      return hasChanges ? updatedTasks : prevTasks;
+    });
+  };
+
+  // Check expired tasks on component mount
+  useEffect(() => {
+    checkAndResetExpiredTasks();
   }, []);
 
   // Apply presets to create actual tasks
@@ -1038,22 +1113,23 @@ const TaskTracker = () => {
                                   }`}
                                   onClick={() => toggleTaskComplete(task.id)}
                                 >
-                                  <Checkbox
-                                    checked={task.completed}
-                                    onCheckedChange={(checked) => {
-                                      // Prevent the row click from firing when checkbox is clicked
-                                      const event = window.event;
-                                      if (event) {
-                                        event.stopPropagation();
-                                      }
+                                  <div
+                                    onClick={(e) => {
+                                      e.stopPropagation();
                                       toggleTaskComplete(task.id);
                                     }}
-                                    className={`h-3.5 w-3.5 flex-shrink-0 ${
-                                      isUrsusTask && isGoldenTimeActive && !task.completed
-                                        ? 'data-[state=checked]:bg-yellow-500 data-[state=checked]:border-yellow-500 border-yellow-400'
-                                        : 'data-[state=checked]:bg-success data-[state=checked]:border-success'
-                                    }`}
-                                  />
+                                    className="flex-shrink-0"
+                                  >
+                                    <Checkbox
+                                      checked={task.completed}
+                                      onCheckedChange={() => {}}
+                                      className={`h-3.5 w-3.5 ${
+                                        isUrsusTask && isGoldenTimeActive && !task.completed
+                                          ? 'data-[state=checked]:bg-yellow-500 data-[state=checked]:border-yellow-500 border-yellow-400'
+                                          : 'data-[state=checked]:bg-success data-[state=checked]:border-success'
+                                      }`}
+                                    />
+                                  </div>
                                   <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
                                     <div className="flex items-center gap-1.5 min-w-0 flex-1">
                                       <span className={`text-xs font-medium truncate ${
@@ -1137,18 +1213,19 @@ const TaskTracker = () => {
                                 }`}
                                 onClick={() => toggleTaskComplete(task.id)}
                               >
-                                <Checkbox
-                                  checked={task.completed}
-                                  onCheckedChange={(checked) => {
-                                    // Prevent the row click from firing when checkbox is clicked
-                                    const event = window.event;
-                                    if (event) {
-                                      event.stopPropagation();
-                                    }
+                                <div
+                                  onClick={(e) => {
+                                    e.stopPropagation();
                                     toggleTaskComplete(task.id);
                                   }}
-                                  className="data-[state=checked]:bg-success data-[state=checked]:border-success h-3.5 w-3.5 flex-shrink-0"
-                                />
+                                  className="flex-shrink-0"
+                                >
+                                  <Checkbox
+                                    checked={task.completed}
+                                    onCheckedChange={() => {}}
+                                    className="data-[state=checked]:bg-success data-[state=checked]:border-success h-3.5 w-3.5"
+                                  />
+                                </div>
                                 <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
                                   <span className={`text-xs font-medium truncate ${
                                     task.completed ? 'line-through text-muted-foreground' : 'text-foreground'
@@ -1203,7 +1280,7 @@ const TaskTracker = () => {
                               </Badge>
                             </div>
                             <span className="text-xs text-muted-foreground">
-                              Monthly Reset
+                              {formatTimeRemaining(getTimeUntilReset('monthly'), 'monthly')}
                             </span>
                           </div>
                           <div className={`grid grid-cols-1 gap-1 transition-all duration-300 ease-in-out ${
@@ -1221,18 +1298,19 @@ const TaskTracker = () => {
                                 }`}
                                 onClick={() => toggleTaskComplete(task.id)}
                               >
-                                <Checkbox
-                                  checked={task.completed}
-                                  onCheckedChange={(checked) => {
-                                    // Prevent the row click from firing when checkbox is clicked
-                                    const event = window.event;
-                                    if (event) {
-                                      event.stopPropagation();
-                                    }
+                                <div
+                                  onClick={(e) => {
+                                    e.stopPropagation();
                                     toggleTaskComplete(task.id);
                                   }}
-                                  className="data-[state=checked]:bg-success data-[state=checked]:border-success h-3.5 w-3.5 flex-shrink-0"
-                                />
+                                  className="flex-shrink-0"
+                                >
+                                  <Checkbox
+                                    checked={task.completed}
+                                    onCheckedChange={() => {}}
+                                    className="data-[state=checked]:bg-success data-[state=checked]:border-success h-3.5 w-3.5"
+                                  />
+                                </div>
                                 <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
                                   <span className={`text-xs font-medium truncate ${
                                     task.completed ? 'line-through text-muted-foreground' : 'text-foreground'
