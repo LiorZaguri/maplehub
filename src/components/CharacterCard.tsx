@@ -22,6 +22,7 @@ interface CharacterCardProps {
     isMain?: boolean;
     legionLevel?: number;
     raidPower?: number;
+    region?: 'na' | 'eu';
   };
   variant: 'roster' | 'boss-tracker';
   index?: number;

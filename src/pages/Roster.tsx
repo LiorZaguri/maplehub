@@ -35,6 +35,7 @@ interface Character {
   isMain: boolean;
   legionLevel?: number;
   raidPower?: number;
+  region?: 'na' | 'eu'; // Store which region the character was found in
 };
 
 
@@ -128,6 +129,8 @@ const Roster = () => {
   const [newCharacterName, setNewCharacterName] = useState('');
   const [bulkNamesInput, setBulkNamesInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const defaultRegion = 'na' as const;
+  const [characterRegion, setCharacterRegion] = useState<'na' | 'eu' | 'auto'>(defaultRegion);
   const [isBossDialogOpen, setIsBossDialogOpen] = useState(false);
   const [pendingCharacterName, setPendingCharacterName] = useState<string | null>(null);
   const [pendingBulkNames, setPendingBulkNames] = useState<string[] | null>(null);
@@ -726,7 +729,7 @@ const Roster = () => {
         toast({ title: 'No new characters', description: 'All provided names already exist in the roster', variant: 'destructive' });
         return;
       }
-      const results = await Promise.allSettled(toAdd.map(n => fetchCharacterData(n)));
+      const results = await Promise.allSettled(toAdd.map(n => fetchCharacterData(n, characterRegion)));
       const added: Character[] = [];
       results.forEach((res) => {
         if (res.status === 'fulfilled') {
@@ -1048,10 +1051,10 @@ const Roster = () => {
     }
   };
 
-  const fetchCharacterData = async (characterName: string) => {
+  const fetchCharacterData = async (characterName: string, region: 'na' | 'eu' | 'auto' = 'auto') => {
     try {
       const { data, error } = await supabase.functions.invoke('nexon-character-lookup', {
-        body: { characterName }
+        body: { characterName, region }
       });
 
       if (error) {
@@ -1067,7 +1070,8 @@ const Roster = () => {
         exp: data.exp,
         isMain: data.isMain,
         legionLevel: data.legionLevel,
-        raidPower: data.raidPower
+        raidPower: data.raidPower,
+        region: data.region // Store which region the character was found in
       };
     } catch (error) {
       throw new Error('Failed to fetch character data from Nexon API');
@@ -1092,7 +1096,7 @@ const Roster = () => {
         return;
       }
 
-      const characterData = await fetchCharacterData(newCharacterName.trim());
+      const characterData = await fetchCharacterData(newCharacterName.trim(), characterRegion);
       const newCharacter: Character = {
         id: Date.now().toString(),
         ...characterData,
@@ -1184,21 +1188,21 @@ const Roster = () => {
       description: "Updating all character information...",
       className: "progress-partial",
     });
-  
+
     try {
       const BATCH = 5; // adjust as needed
       const now = new Date().toISOString();
       const updated: Character[] = [];
       let failed = 0;
-  
+
       for (let i = 0; i < characters.length; i += BATCH) {
         const batch = characters.slice(i, i + BATCH);
-  
+
         const results = await Promise.allSettled(
           batch.map(async (char) => {
-            const data = await fetchCharacterData(char.name);
+            const data = await fetchCharacterData(char.name, defaultRegion);
             const isMain = data.isMain ?? char.isMain;
-  
+
             return {
               ...char,
               name: data.name ?? char.name,
@@ -1208,17 +1212,20 @@ const Roster = () => {
               avatarUrl: data.avatarUrl ?? char.avatarUrl,
               exp: data.exp ?? char.exp,
               lastUpdated: now,
-  
+
               // fresh main/legion fields
               isMain,
               legionLevel:
                 isMain === false ? null : (data.legionLevel ?? char.legionLevel ?? null),
               raidPower:
                 isMain === false ? null : (data.raidPower ?? char.raidPower ?? null),
+
+              // Add region information for existing characters
+              region: data.region ?? char.region,
             } as Character;
           })
         );
-  
+
         results.forEach((res, idx) => {
           if (res.status === "fulfilled") {
             updated.push(res.value);
@@ -1228,7 +1235,7 @@ const Roster = () => {
           }
         });
       }
-  
+
       const enforced = enforceSingleMain(updated);
       setCharacters(enforced);
 
@@ -1236,7 +1243,7 @@ const Roster = () => {
       setMainCharacter(main);
       setMainLegion(main?.legionLevel ?? null);
       setMainRaidPower(main?.raidPower ?? null);
-  
+
       toast({
         title: "Data Updated",
         description: failed
@@ -1296,6 +1303,22 @@ const Roster = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
+          {/* Region Selector */}
+          <div className="flex flex-col sm:flex-row gap-2 mb-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">Region:</span>
+              <Select value={characterRegion} onValueChange={(value: 'na' | 'eu' | 'auto') => setCharacterRegion(value)}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="na">NA</SelectItem>
+                  <SelectItem value="eu">EU</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
           <div className="flex flex-col sm:flex-row gap-2">
           <form
             onSubmit={(e) => {
