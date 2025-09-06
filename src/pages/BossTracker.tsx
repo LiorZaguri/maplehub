@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { 
@@ -739,6 +739,8 @@ const BossTracker = () => {
     }
   };
 
+
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -883,13 +885,19 @@ const BossTracker = () => {
               <div>
                 <p className="text-sm text-muted-foreground">Total characters done:</p>
                 <p className={`text-2xl font-bold ${(() => {
-                  const combined = [...weeklyBosses, ...dailyBosses];
-                  const done = roster.filter(r => getCompletionStats(r.name, combined).percentage === 100).length;
+                  const combined = [...weeklyBosses, ...dailyBosses, ...monthlyBosses];
+                  const done = roster.filter(r => {
+                    const stats = getCompletionStats(r.name, combined);
+                    return stats.completed === stats.total;
+                  }).length;
                   const total = roster.length;
                   return done === total && total > 0 ? 'text-success' : '';
                 })()}`}>{(() => {
-                  const combined = [...weeklyBosses, ...dailyBosses];
-                  const done = roster.filter(r => getCompletionStats(r.name, combined).percentage === 100).length;
+                  const combined = [...weeklyBosses, ...dailyBosses, ...monthlyBosses];
+                  const done = roster.filter(r => {
+                    const stats = getCompletionStats(r.name, combined);
+                    return stats.completed === stats.total;
+                  }).length;
                   const total = roster.length;
                   return `${done} / ${total}`;
                 })()}</p>
