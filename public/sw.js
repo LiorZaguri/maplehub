@@ -1,6 +1,6 @@
-const CACHE_NAME = 'maplehub-v3.2.1';
-const STATIC_CACHE = 'maplehub-static-v3.2.1';
-const DYNAMIC_CACHE = 'maplehub-dynamic-v3.2.1';
+const CACHE_NAME = 'maplehub-v3.2.2';
+const STATIC_CACHE = 'maplehub-static-v3.2.2';
+const DYNAMIC_CACHE = 'maplehub-dynamic-v3.2.2';
 
 // Get the base path for GitHub Pages
 const getBasePath = () => {
@@ -21,6 +21,15 @@ const STATIC_ASSETS = [
   BASE_PATH + '/maple-leaf.svg',
   BASE_PATH + '/placeholder.svg',
   BASE_PATH + '/404.html'
+];
+
+// URLs that should not be cached (auth, API calls, etc.)
+const EXCLUDE_FROM_CACHE = [
+  /supabase\.co/,
+  /discord\.com/,
+  /google\.com/,
+  /auth/,
+  /api\//
 ];
 
 // Install event - cache static assets
@@ -55,37 +64,43 @@ self.addEventListener('activate', (event) => {
 // Fetch event - serve from cache when possible
 self.addEventListener('fetch', (event) => {
   const { request } = event;
-  
+
   // Skip non-GET requests
   if (request.method !== 'GET') return;
-  
+
   // Skip chrome-extension and other non-http requests
   if (!request.url.startsWith('http')) return;
-  
+
+  // Skip caching for auth and API requests
+  const shouldSkipCache = EXCLUDE_FROM_CACHE.some(pattern => pattern.test(request.url));
+  if (shouldSkipCache) {
+    return; // Let the request go through normally without caching
+  }
+
   event.respondWith(
     caches.match(request).then((response) => {
       // Return cached version if available
       if (response) {
         return response;
       }
-      
+
       // Clone the request for fetch
       const fetchRequest = request.clone();
-      
+
       return fetch(fetchRequest).then((response) => {
         // Check if we received a valid response
         if (!response || response.status !== 200 || response.type !== 'basic') {
           return response;
         }
-        
+
         // Clone the response for caching
         const responseToCache = response.clone();
-        
+
         // Cache dynamic assets
         caches.open(DYNAMIC_CACHE).then((cache) => {
           cache.put(request, responseToCache);
         });
-        
+
         return response;
       });
     })

@@ -7,6 +7,7 @@ import { lazy, Suspense } from "react";
 import Layout from "@/components/Layout";
 import { ServerStatusNotifier } from "@/components/ServerStatusNotifier";
 import { ServerStatusIndicator } from "@/components/ServerStatusIndicator";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 // Lazy load pages for better code splitting
 const Index = lazy(() => import("./pages/Index"));
@@ -15,6 +16,7 @@ const TaskTracker = lazy(() => import("./pages/TaskTracker"));
 const VITracker = lazy(() => import("./pages/VITracker"));
 const Mules = lazy(() => import("./pages/Mules"));
 const ServerStatus = lazy(() => import("./pages/ServerStatus"));
+const AuthCallback = lazy(() => import("./pages/AuthCallback"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Loading component
@@ -35,29 +37,32 @@ const queryClient = new QueryClient({
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <ServerStatusNotifier />
-      {/* Desktop Server Status Indicator - Completely independent of routing */}
-      <div className="hidden xl:block fixed left-0 bottom-0 w-64 z-50">
-        <ServerStatusIndicator />
-      </div>
-      <HashRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-        <Suspense fallback={<PageLoader />}>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/bosses" element={<BossTracker />} />
-            <Route path="/tasks" element={<TaskTracker />} />
-            <Route path="/vi-tracker" element={<VITracker />} />
-            <Route path="/mules" element={<Mules />} />
-            <Route path="/server-status" element={<ServerStatus />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Suspense>
-      </HashRouter>
-    </TooltipProvider>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <ServerStatusNotifier />
+        {/* Desktop Server Status Indicator - Completely independent of routing */}
+        <div className="hidden xl:block fixed left-0 bottom-0 w-64 z-50">
+          <ServerStatusIndicator />
+        </div>
+        <HashRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/bosses" element={<BossTracker />} />
+              <Route path="/tasks" element={<TaskTracker />} />
+              <Route path="/vi-tracker" element={<VITracker />} />
+              <Route path="/mules" element={<Mules />} />
+              <Route path="/server-status" element={<ServerStatus />} />
+              <Route path="/auth/callback" element={<AuthCallback />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
+        </HashRouter>
+      </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 

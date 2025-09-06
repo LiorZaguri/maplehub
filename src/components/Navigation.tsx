@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Users,
   Sword,
@@ -9,13 +10,18 @@ import {
   TrendingUp,
   Server,
   CheckSquare,
-  Coffee
+  Coffee,
+  LogIn,
+  LogOut,
+  User
 } from 'lucide-react';
 import { ServerStatusIndicator } from './ServerStatusIndicator';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Navigation = () => {
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
+  const { user, loading, signInWithDiscord, signInWithGoogle, signOut } = useAuth();
 
   const navItems = useMemo(() => [
     { name: 'Roster', path: '/', icon: Users },
@@ -63,6 +69,64 @@ const Navigation = () => {
         })}
       </div>
 
+      {/* Auth Section */}
+      <div className="px-4 py-4 border-t border-border/50">
+        {loading ? (
+          <div className="flex items-center justify-center py-2">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+          </div>
+        ) : user ? (
+          <div className="space-y-3">
+            <div className="flex items-center space-x-3 p-2 rounded-lg bg-card/50">
+              <Avatar className="h-8 w-8">
+                <AvatarImage src={user.user_metadata?.avatar_url} />
+                <AvatarFallback>
+                  <User className="h-4 w-4" />
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">
+                  {user.user_metadata?.full_name || user.user_metadata?.name || 'User'}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {user.email}
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => signOut()}
+              className="w-full"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Sign Out
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => signInWithDiscord()}
+              className="w-full"
+            >
+              <LogIn className="h-4 w-4 mr-2" />
+              Sign in with Discord
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => signInWithGoogle()}
+              className="w-full"
+            >
+              <LogIn className="h-4 w-4 mr-2" />
+              Sign in with Google
+            </Button>
+          </div>
+        )}
+      </div>
+
       <div className="px-4 py-4 border-t border-border/50 mt-4">
         <a
           href="https://buymeacoffee.com/lzaguri10a"
@@ -81,7 +145,7 @@ const Navigation = () => {
         </a>
       </div>
     </div>
-  ), [navItems, location.pathname, setIsOpen]);
+  ), [navItems, location.pathname, setIsOpen, user, loading, signInWithDiscord, signInWithGoogle, signOut]);
 
   return (
     <>
@@ -145,6 +209,64 @@ const Navigation = () => {
                       </Link>
                     );
                   })}
+                </div>
+
+                {/* Auth Section - Mobile */}
+                <div className="px-4 py-4 border-t border-border/50">
+                  {loading ? (
+                    <div className="flex items-center justify-center py-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                    </div>
+                  ) : user ? (
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-3 p-2 rounded-lg bg-card/50">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={user.user_metadata?.avatar_url} />
+                          <AvatarFallback>
+                            <User className="h-4 w-4" />
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">
+                            {user.user_metadata?.full_name || user.user_metadata?.name || 'User'}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {user.email}
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => signOut()}
+                        className="w-full"
+                      >
+                        <LogOut className="h-4 w-4 mr-2" />
+                        Sign Out
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => signInWithDiscord()}
+                        className="w-full"
+                      >
+                        <LogIn className="h-4 w-4 mr-2" />
+                        Sign in with Discord
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => signInWithGoogle()}
+                        className="w-full"
+                      >
+                        <LogIn className="h-4 w-4 mr-2" />
+                        Sign in with Google
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="px-4 py-4 border-t border-border/50 mt-4">
