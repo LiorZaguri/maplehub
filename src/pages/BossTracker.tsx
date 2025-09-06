@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { 
   Table, 
   TableBody, 
@@ -11,27 +10,14 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Sword, Calendar, Trophy, RotateCcw, Pencil, MoreVertical, CheckSquare, XCircle, Filter, Star } from 'lucide-react';
+import { Sword, Calendar, Trophy, RotateCcw, Filter, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import Layout from '@/components/Layout';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { getBossMeta, formatMesos, listAllBosses, getMaxPartySize } from '@/lib/bossData';
-import { getLevelProgress } from '@/lib/levels';
 import CharacterCard from '@/components/CharacterCard';
 
 interface RosterCharacter {
@@ -300,12 +286,10 @@ const BossTracker = () => {
   const [bossFilter, setBossFilter] = useState<FilterType>('all');
   const [showReorderDialog, setShowReorderDialog] = useState(false);
   const [reorderCharacters, setReorderCharacters] = useState<RosterCharacter[]>([]);
-  const [draggedCharacterId, setDraggedCharacterId] = useState<string | null>(null);
 
   // Party size editing state
   const [editingPartySize, setEditingPartySize] = useState<{ characterName: string; bossName: string } | null>(null);
   const [partySizeInput, setPartySizeInput] = useState<string>('');
-
 
   useEffect(() => {
     try {
@@ -513,54 +497,6 @@ const BossTracker = () => {
     ).length;
   };
 
-  // Function to disable the lowest value boss for a character
-  const disableLowestValueBoss = (characterName: string) => {
-    // Prevent multiple simultaneous disable operations for the same character
-    if (disableInProgressRef.current[characterName]) {
-      return;
-    }
-
-    disableInProgressRef.current[characterName] = true;
-
-    const weeklyDailyBosses = [...weeklyBosses, ...dailyBosses];
-    const enabledBosses = weeklyDailyBosses.filter(b => isBossEnabledForCharacter(characterName, b.name) && !isBossTempDisabledForCharacter(characterName, b.name));
-
-    if (enabledBosses.length === 0) {
-      disableInProgressRef.current[characterName] = false;
-      return;
-    }
-
-    // Find the lowest value boss among enabled ones
-    const lowestValueBoss = enabledBosses.reduce((lowest, current) => {
-      const lowestValue = Math.floor(lowest.value / getPartySize(characterName, lowest.name));
-      const currentValue = Math.floor(current.value / getPartySize(characterName, current.name));
-      return currentValue < lowestValue ? current : lowest;
-    });
-
-    // Temporarily disable the lowest value boss
-    setTempDisabledByCharacter((prev) => {
-      const current = prev[characterName] || {};
-      return {
-        ...prev,
-        [characterName]: {
-          ...current,
-          [lowestValueBoss.name]: true,
-        },
-      };
-    });
-
-    toast({
-      title: 'Boss Temporarily Disabled',
-      description: `${lowestValueBoss.name} has been temporarily disabled for ${characterName} to stay within the 14 crystal limit.`,
-      className: 'bg-orange-500 text-white'
-    });
-
-    // Clear the in-progress flag after a short delay
-    setTimeout(() => {
-      disableInProgressRef.current[characterName] = false;
-    }, 100);
-  };
-
   const toggleBossComplete = (characterName: string, bossName: string) => {
     // Check if this is a monthly boss
     const isMonthly = monthlyBosses.some(b => b.name === bossName);
@@ -588,20 +524,6 @@ const BossTracker = () => {
         [bossName]: willBeChecked,
       },
     }));
-  };
-
-  const toggleBossEnabled = (characterName: string, bossName: string, defaultEnabled = true) => {
-    setEnabledByCharacter((prev) => {
-      const current = prev[characterName] || {};
-      const currentVal = bossName in current ? current[bossName] : defaultEnabled;
-      return {
-        ...prev,
-        [characterName]: {
-          ...current,
-          [bossName]: !currentVal,
-        },
-      };
-    });
   };
 
   const isBossEnabledForCharacter = (characterName: string, bossName: string): boolean => {
@@ -817,12 +739,6 @@ const BossTracker = () => {
     }
   };
 
-
-
-
-
-
-
   return (
     <Layout>
       <div className="space-y-6">
@@ -871,49 +787,27 @@ const BossTracker = () => {
               <div>
                 <p className="text-sm text-muted-foreground">Total meso collected:</p>
                 <p className={`text-2xl font-bold ${(() => {
-                  // For total meso collected, include weekly + daily + checked monthly
+                  // Sum of each character's current Collected value (as shown in their individual cards)
                   const totalCollected = roster.reduce((acc, c) => {
-                    const weeklyDailyValue = getCollectedValue(c.name, [...weeklyBosses, ...dailyBosses]);
-                    const monthlyValue = getCollectedValue(c.name, monthlyBosses);
-                    return acc + weeklyDailyValue + monthlyValue;
+                    return acc + getCollectedValue(c.name, [...weeklyBosses, ...dailyBosses, ...monthlyBosses]);
                   }, 0);
-                  // For max possible, include weekly + daily + checked monthly only
+                  // Sum of each character's current Max Possible value (as shown in their individual cards)
                   const totalMax = roster.reduce((acc, c) => {
-                    const weeklyDailyMax = getMaxPossibleValue(c.name, [...weeklyBosses, ...dailyBosses], true);
-                    // Only include monthly bosses that are actually checked
-                    const monthlyMax = monthlyBosses.reduce((sum, b) => {
-                      const isEnabled = isBossEnabledForCharacter(c.name, b.name);
-                      const isChecked = (progressByCharacter[c.name] || {})[b.name];
-                      const party = getPartySize(c.name, b.name);
-                      const share = Math.floor(b.value / party);
-                      return sum + (isEnabled && isChecked ? share : 0);
-                    }, 0);
-                    return acc + weeklyDailyMax + monthlyMax;
+                    return acc + getMaxPossibleValue(c.name, [...weeklyBosses, ...dailyBosses, ...monthlyBosses]);
                   }, 0);
                   return totalCollected >= totalMax ? 'text-success' : '';
                 })()}`}>{(() => {
-                  // For total meso collected, include weekly + daily + checked monthly
+                  // Sum of each character's current Collected value (as shown in their individual cards)
                   const totalCollected = roster.reduce((acc, c) => {
-                    const weeklyDailyValue = getCollectedValue(c.name, [...weeklyBosses, ...dailyBosses]);
-                    const monthlyValue = getCollectedValue(c.name, monthlyBosses);
-                    return acc + weeklyDailyValue + monthlyValue;
+                    return acc + getCollectedValue(c.name, [...weeklyBosses, ...dailyBosses, ...monthlyBosses]);
                   }, 0);
                   return totalCollected.toLocaleString();
                 })()}</p>
                 <p className="text-sm text-muted-foreground mt-1">Max possible meso:</p>
                 <p className="text-xl font-bold">{(() => {
-                  // For max possible, include weekly + daily + checked monthly only
+                  // Sum of each character's current Max Possible value (as shown in their individual cards)
                   const totalMax = roster.reduce((acc, c) => {
-                    const weeklyDailyMax = getMaxPossibleValue(c.name, [...weeklyBosses, ...dailyBosses], true);
-                    // Only include monthly bosses that are actually checked
-                    const monthlyMax = monthlyBosses.reduce((sum, b) => {
-                      const isEnabled = isBossEnabledForCharacter(c.name, b.name);
-                      const isChecked = (progressByCharacter[c.name] || {})[b.name];
-                      const party = getPartySize(c.name, b.name);
-                      const share = Math.floor(b.value / party);
-                      return sum + (isEnabled && isChecked ? share : 0);
-                    }, 0);
-                    return acc + weeklyDailyMax + monthlyMax;
+                    return acc + getMaxPossibleValue(c.name, [...weeklyBosses, ...dailyBosses, ...monthlyBosses]);
                   }, 0);
                   return totalMax.toLocaleString();
                 })()}</p>
