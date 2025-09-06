@@ -160,20 +160,12 @@ function calculateWeeklyReset(utcNow: Date): number {
   const currentDay = utcNow.getUTCDay();
   let daysUntilReset = 0;
 
-  if (currentDay < 3) {
-    daysUntilReset = 3 - currentDay;
-  } else if (currentDay === 3) {
-    if (utcNow.getUTCHours() < 24) {
-      daysUntilReset = 0;
-    } else {
-      daysUntilReset = 7;
-    }
+  if (currentDay < 4) {
+    daysUntilReset = 4 - currentDay;
   } else if (currentDay === 4) {
-    daysUntilReset = 6;
-  } else if (currentDay === 5) {
-    daysUntilReset = 5;
+    daysUntilReset = 7;
   } else {
-    daysUntilReset = 3 + (7 - currentDay);
+    daysUntilReset = 4 + (7 - currentDay);
   }
 
   const nextReset = new Date(utcNow);
