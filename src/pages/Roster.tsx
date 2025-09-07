@@ -2445,7 +2445,9 @@ const Roster = () => {
 
           {mainCharacter ? (
             <CardContent
-              className="space-y-4 cursor-pointer transition-colors duration-200"
+              className={`space-y-4 transition-colors duration-200 ${
+                mainCharacter.level >= 260 ? 'cursor-pointer' : 'cursor-default'
+              }`}
               onClick={() => {
                 if (mainCharacter.level >= 260) {
                   selectCharacterForExpGraph(mainCharacter);
@@ -2565,8 +2567,11 @@ const Roster = () => {
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <User className="h-5 w-5 text-primary" />
-            <span>Mule Characters ({characters.length - (mainCharacter ? 1 : 0)})</span>
+            <span>Characters ({characters.length - (mainCharacter ? 1 : 0)})</span>
           </CardTitle>
+          <p className="text-sm text-muted-foreground mt-2">
+            You can click on a Lv. 260+ character to view their experience graph
+          </p>
         </CardHeader>
         <CardContent>
           {/* Character Cards - Responsive Grid Layout */}
@@ -2577,7 +2582,9 @@ const Roster = () => {
               .map(({ character, fullIndex }, filteredIndex) => (
                 <div
                   key={character.id}
-                  className={`cursor-pointer transition-transform duration-200 rounded-lg hover:scale-105 ${
+                  className={`transition-transform duration-200 rounded-lg ${
+                    character.level >= 260 ? 'cursor-pointer hover:scale-105' : 'cursor-default'
+                  } ${
                     selectedExpCharacter?.id === character.id
                       ? 'ring-2 ring-primary ring-offset-2 ring-offset-background'
                       : ''
