@@ -1301,7 +1301,7 @@ const Roster = () => {
   const [mainLegion, setMainLegion] = useState<number | null>(null);
   const [mainRaidPower, setMainRaidPower] = useState<number | null>(null);
   const [mainCharacter, setMainCharacter] = useState<Character | null>(null);
-  const [expChartTimePeriod, setExpChartTimePeriod] = useState<'7D' | '14D' | '30D'>('14D');
+  const [expChartTimePeriod, setExpChartTimePeriod] = useState<'7D' | '14D' | '30D'>('7D');
   const [selectedExpCharacter, setSelectedExpCharacter] = useState<Character | null>(null);
 
   // Function to enforce single main character
@@ -2396,7 +2396,7 @@ const Roster = () => {
 
       {/* Main Character and Experience Graph - Equal Heights */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className={`card-gaming ${selectedExpCharacter?.id === mainCharacter?.id ? 'ring-2 ring-primary ring-offset-2 ring-offset-background rounded-lg' : ''}`}>
+        <Card className="card-gaming">
           <CardHeader>
             {mainCharacter && (
               <>
