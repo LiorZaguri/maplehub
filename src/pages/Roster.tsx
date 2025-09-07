@@ -2341,10 +2341,7 @@ const Roster = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-center text-muted-foreground">
-              <p>This space is reserved for future features.</p>
-              <p className="text-sm mt-2">You can add stats, achievements, or other information here.</p>
-            </div>
+
           </CardContent>
         </Card>
       </div>
