@@ -136,6 +136,15 @@ const ExpChart = ({
             dataKey="experience"
             fill="var(--color-experience)"
             radius={4}
+            label={timePeriod !== '30D' ? {
+              position: 'top',
+              formatter: (value: number) => formatNumber(value),
+              style: {
+                fontSize: '10px',
+                fill: 'hsl(var(--foreground))',
+                fontWeight: '500'
+              }
+            } : false}
           />
         </BarChart>
       </ChartContainer>
