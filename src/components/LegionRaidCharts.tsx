@@ -145,10 +145,6 @@ export function LegionRaidCharts({ legionLevel, raidPower, level, exp, expData }
               innerRadius={60}
               outerRadius={100}
             >
-              <ChartTooltip
-                cursor={false}
-                content={<ChartTooltipContent hideLabel />}
-              />
               <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
                 <Label
                   content={({ viewBox }) => {
@@ -209,24 +205,7 @@ export function LegionRaidCharts({ legionLevel, raidPower, level, exp, expData }
               innerRadius={60}
               outerRadius={100}
             >
-              <ChartTooltip
-                cursor={false}
-                content={({ active, payload, label }) => {
-                  if (active && payload && payload.length) {
-                    return (
-                      <div className="bg-popover text-popover-foreground text-sm px-2 py-1 rounded-md shadow-lg border border-border">
-                        <div className="font-medium">Legion Raid Power</div>
-                          <div className="flex justify-between gap-4 text-xs">
-                            <span className="text-muted-foreground">
-                              {raidPower}
-                            </span>
-                          </div>
-                      </div>
-                    );
-                  }
-                  return null;
-                }}
-              />  
+
               <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
                 <Label
                   content={({ viewBox }) => {
@@ -245,7 +224,7 @@ export function LegionRaidCharts({ legionLevel, raidPower, level, exp, expData }
                             y={(viewBox.cy || 0) + 8}
                             className="fill-muted-foreground text-xs"
                           >
-                            Power
+                            Raid Power
                           </tspan>
                         </text>
                       )

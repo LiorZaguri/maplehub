@@ -128,7 +128,7 @@ export function formatTimeDetailed(seconds: number): string {
 export function isUrsusGoldenTime(): boolean {
   const now = new Date();
   const utcHour = now.getUTCHours();
-  return (utcHour >= 1 && utcHour < 3) || (utcHour >= 18 && utcHour < 20);
+  return (utcHour >= 1 && utcHour < 3) || (utcHour >= 18 && utcHour <= 20);
 }
 
 /**
@@ -145,8 +145,8 @@ export function getUrsusGoldenTimeRemaining(): number | null {
   let endHour: number;
   if (utcHour >= 1 && utcHour < 3) {
     endHour = 3;
-  } else if (utcHour >= 18 && utcHour < 20) {
-    endHour = 20;
+  } else if (utcHour >= 18 && utcHour <= 20) {
+    endHour = 21; // End at 9:00 PM to include full 8:00 PM hour
   } else {
     return null;
   }
@@ -178,8 +178,8 @@ export function getNextUrsusGoldenTime(): Date | null {
     const nextTime = new Date(now);
     nextTime.setUTCHours(18, 0, 0, 0);
     return nextTime;
-  } else if (utcHour < 20) {
-    // Currently in second golden time window
+  } else if (utcHour <= 20) {
+    // Currently in second golden time window (including 8:00 PM)
     return null; // Currently active
   } else {
     // Next golden time is 1:00 AM tomorrow

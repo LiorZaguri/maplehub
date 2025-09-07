@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/chart';
 import { Bar, BarChart, CartesianGrid, XAxis } from 'recharts';
 
-import { Plus, RefreshCw, User, Clock, Pencil, XIcon, ArrowUp, ArrowDown, Trophy, Calendar, BarChart3, RotateCcw } from 'lucide-react';
+import { Plus, RefreshCw, User, Clock, Pencil, XIcon, ArrowUp, ArrowDown, Trophy, Calendar, BarChart3, RotateCcw, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { listAllBosses, getMaxPartySize } from '@/lib/bossData';
@@ -30,6 +30,11 @@ import {
   AlertDialogHeader, AlertDialogTitle, AlertDialogDescription,
   AlertDialogFooter, AlertDialogCancel, AlertDialogAction
 } from "@/components/ui/alert-dialog";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 
 // Format large numbers with consistent units
 const formatNumber = (num: number): string => {
@@ -2397,59 +2402,35 @@ const Roster = () => {
       {/* Main Character and Experience Graph - Equal Heights */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="card-gaming">
-          <CardHeader>
-            {mainCharacter && (
-              <>
-                <div className="absolute top-4 right-4 flex gap-2">
-                  <Button
-                        variant="ghost"
-                        size="sm"
-                        title="Edit bosses"
-                        onClick={() => openBossEditor(mainCharacter.name)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                        Edit
-                  </Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-red-500 hover:text-red-600"
-                        aria-label="Delete character"
-                        title="Delete character"
-                      >
-                        <XIcon className="h-4 w-4" aria-hidden="true" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete {mainCharacter.name}?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This will remove the character from your roster. This action cannot be undone.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          className="bg-red-600 hover:bg-red-700"
-                          onClick={() =>
-                            setCharacters(prev => prev.filter(c => c.id !== mainCharacter.id))
-                          }
-                        >
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              </>
-              )
-            }
+
+          <CardHeader className="relative">
             <CardTitle className="flex items-center space-x-2">
               <Trophy className="h-5 w-5 text-amber-400" aria-hidden="true" />
               <span>Main Character</span>
             </CardTitle>
+            <div className="absolute top-4 right-4">
+              <HoverCard>
+                <HoverCardTrigger asChild>
+                  <div className="p-1.5 rounded-md bg-primary/10 hover:bg-primary/20 transition-colors cursor-help">
+                    <Info className="h-5 w-5 text-primary" />
+                  </div>
+                </HoverCardTrigger>
+                <HoverCardContent className="w-80" side="bottom" align="end">
+                  <div className="space-y-2">
+                    <h4 className="font-semibold">Main Character</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Auto-detected as your highest-level character. Used for Legion and Raid Power calculations.
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      You can manually set another Lv. 260+ character as main, but Legion/Raid Power won't be available for non-highest level characters.
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Hover over the Exp Progress bar below to see ETA to next level.
+                    </p>
+                  </div>
+                </HoverCardContent>
+              </HoverCard>
+            </div>
           </CardHeader>
 
           {mainCharacter ? (

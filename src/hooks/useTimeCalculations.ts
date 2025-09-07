@@ -83,7 +83,7 @@ export function useTimeCalculations(options: TimeCalculationOptions = {}) {
   // Check if Ursus golden time is active
   const isUrsusGoldenTime = useMemo(() => {
     const utcHour = currentTime.getUTCHours();
-    return (utcHour >= 1 && utcHour < 3) || (utcHour >= 18 && utcHour < 20);
+    return (utcHour >= 1 && utcHour < 3) || (utcHour >= 18 && utcHour <= 20);
   }, [currentTime]);
 
   // Get Ursus golden time remaining
@@ -98,8 +98,8 @@ export function useTimeCalculations(options: TimeCalculationOptions = {}) {
     let endHour: number;
     if (utcHour >= 1 && utcHour < 3) {
       endHour = 3;
-    } else if (utcHour >= 18 && utcHour < 20) {
-      endHour = 20;
+    } else if (utcHour >= 18 && utcHour <= 20) {
+      endHour = 21; // End at 9:00 PM to include full 8:00 PM hour
     } else {
       return null;
     }
@@ -126,8 +126,8 @@ export function useTimeCalculations(options: TimeCalculationOptions = {}) {
       const nextTime = new Date(now);
       nextTime.setUTCHours(18, 0, 0, 0);
       return nextTime;
-    } else if (utcHour < 20) {
-      return null; // Currently in second window
+    } else if (utcHour <= 20) {
+      return null; // Currently in second window (including 8:00 PM)
     } else {
       const nextTime = new Date(now);
       nextTime.setUTCDate(nextTime.getUTCDate() + 1);
