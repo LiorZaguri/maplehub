@@ -19,6 +19,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { getBossMeta, formatMesos, listAllBosses, getMaxPartySize } from '@/lib/bossData';
 import CharacterCard from '@/components/CharacterCard';
+import { getCharacterWorldMultiplier } from '@/utils/bossUtils';
 
 interface RosterCharacter {
   id: string;
@@ -489,14 +490,6 @@ const BossTracker = () => {
     return Math.min(6, Math.max(1, Math.floor(n)));
   };
 
-  // Helper function to get world multiplier based on main character's world
-  const getWorldMultiplier = (): number => {
-    const mainCharacter = roster.find(c => c.isMain);
-    const mainWorld = mainCharacter?.worldName?.toLowerCase();
-    const isLowRateWorld = mainWorld && ['bera', 'scania', 'luna'].includes(mainWorld);
-    return isLowRateWorld ? 0.2 : 1; // 1/5 for low-rate worlds, 1 for high-rate worlds
-  };
-
   // Function to get current boss completion count for a character (all bosses count towards crystal limit)
   const getWeeklyBossCount = (characterName: string): number => {
     const bosses = progressByCharacter[characterName] || {};
@@ -580,13 +573,8 @@ const BossTracker = () => {
   const getCollectedValue = (characterName: string, bossList: BossInfo[]) => {
     const bosses = progressByCharacter[characterName] || {};
     const currentCount = getWeeklyBossCount(characterName);
-
-    // Determine world multiplier based on main character's world
-    const mainCharacter = roster.find(c => c.isMain);
-    const mainWorld = mainCharacter?.worldName?.toLowerCase();
-    const isHighRateWorld = mainWorld && ['kronos', 'hyperion', 'solis'].includes(mainWorld);
-    const isLowRateWorld = mainWorld && ['bera', 'scania', 'luna'].includes(mainWorld);
-    const worldMultiplier = isLowRateWorld ? 0.2 : 1; // 1/5 for low-rate worlds, 1 for high-rate worlds
+    const character = roster.find(c => c.name === characterName);
+    const worldMultiplier = getCharacterWorldMultiplier(character || {} as RosterCharacter);
 
     return bossList.reduce((sum, b) => {
       const isEnabled = isBossEnabledForCharacter(characterName, b.name);
@@ -606,13 +594,8 @@ const BossTracker = () => {
   const getMaxPossibleValue = (characterName: string, bossList: BossInfo[], includeMonthlyChecked = false) => {
     const bosses = progressByCharacter[characterName] || {};
     const currentCount = getWeeklyBossCount(characterName);
-
-    // Determine world multiplier based on main character's world
-    const mainCharacter = roster.find(c => c.isMain);
-    const mainWorld = mainCharacter?.worldName?.toLowerCase();
-    const isHighRateWorld = mainWorld && ['kronos', 'hyperion', 'solis'].includes(mainWorld);
-    const isLowRateWorld = mainWorld && ['bera', 'scania', 'luna'].includes(mainWorld);
-    const worldMultiplier = isLowRateWorld ? 0.2 : 1; // 1/5 for low-rate worlds, 1 for high-rate worlds
+    const character = roster.find(c => c.name === characterName);
+    const worldMultiplier = getCharacterWorldMultiplier(character || {} as RosterCharacter);
 
     let considered = bossList.filter(b => {
       const isEnabled = isBossEnabledForCharacter(characterName, b.name);
@@ -1103,7 +1086,7 @@ const BossTracker = () => {
                                       )}
                                     </div>
                                   </TableCell>
-                                  <TableCell className={`text-right font-mono p-0 text-sm ${isBossTempDisabledForCharacter(c.name, b.name) ? 'text-muted-foreground' : ''}`}>{formatMesos(Math.floor((b.value / getPartySize(c.name, b.name)) * getWorldMultiplier()))}</TableCell>
+                                  <TableCell className={`text-right font-mono p-0 text-sm ${isBossTempDisabledForCharacter(c.name, b.name) ? 'text-muted-foreground' : ''}`}>{formatMesos(Math.floor((b.value / getPartySize(c.name, b.name)) * getCharacterWorldMultiplier(c)))}</TableCell>
                                 </TableRow>
                               );
                             })}
@@ -1193,7 +1176,7 @@ const BossTracker = () => {
                                     )}
                                   </div>
                                 </div>
-                                <div className="font-mono">{formatMesos(Math.floor((b.value / getPartySize(c.name, b.name)) * getWorldMultiplier()))}</div>
+                                <div className="font-mono">{formatMesos(Math.floor((b.value / getPartySize(c.name, b.name)) * getCharacterWorldMultiplier(c)))}</div>
                               </div>
                             </div>
                           );

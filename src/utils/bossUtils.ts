@@ -2,6 +2,37 @@ import { BossInfo, CharacterBossProgress, BossEnabledByCharacter, CompletionStat
 import { getBossMeta } from '@/lib/bossData';
 
 /**
+ * Get world multiplier based on main character's world
+ * Low-rate worlds (Bera, Scania, Luna): 0.2 multiplier
+ * High-rate worlds (Kronos, Hyperion, Solis): 1.0 multiplier
+ * Unknown worlds: 1.0 multiplier (default)
+ */
+export const getWorldMultiplier = (roster: RosterCharacter[]): number => {
+  const mainCharacter = roster.find(c => c.isMain);
+  const mainWorld = mainCharacter?.worldName?.toLowerCase();
+  const isHighRateWorld = mainWorld && ['kronos', 'hyperion', 'solis'].includes(mainWorld);
+  const isLowRateWorld = mainWorld && ['bera', 'scania', 'luna'].includes(mainWorld);
+  if (isLowRateWorld) return 0.2; // 1/5 for low-rate worlds
+  if (isHighRateWorld) return 1.0; // 1 for high-rate worlds
+  return 1.0; // Default to 1 for unknown worlds
+};
+
+/**
+ * Get world multiplier for a specific character based on their world
+ * Low-rate worlds (Bera, Scania, Luna): 0.2 multiplier
+ * High-rate worlds (Kronos, Hyperion, Solis): 1.0 multiplier
+ * Unknown worlds: 1.0 multiplier (default)
+ */
+export const getCharacterWorldMultiplier = (character: RosterCharacter): number => {
+  const worldName = character?.worldName?.toLowerCase();
+  const isHighRateWorld = worldName && ['kronos', 'hyperion', 'solis'].includes(worldName);
+  const isLowRateWorld = worldName && ['bera', 'scania', 'luna'].includes(worldName);
+  if (isLowRateWorld) return 0.2; // 1/5 for low-rate worlds
+  if (isHighRateWorld) return 1.0; // 1 for high-rate worlds
+  return 1.0; // Default to 1 for unknown worlds
+};
+
+/**
  * Get the party size for a character and boss
  */
 export const getPartySize = (characterName: string, bossName: string, partyByCharacter: Record<string, Record<string, number>>): number => {

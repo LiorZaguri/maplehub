@@ -8,6 +8,7 @@ export interface RosterCharacter {
   isMain: boolean;
   legionLevel?: number;
   raidPower?: number;
+  worldName?: string;
 }
 
 export interface BossInfo {

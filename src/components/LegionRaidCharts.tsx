@@ -224,7 +224,7 @@ export function LegionRaidCharts({ legionLevel, raidPower, level, exp, expData }
                             y={(viewBox.cy || 0) + 8}
                             className="fill-muted-foreground text-xs"
                           >
-                            Raid Power
+                            RaidPower
                           </tspan>
                         </text>
                       )

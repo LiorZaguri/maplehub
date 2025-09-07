@@ -25,6 +25,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getLevelProgress, getExpForLevel } from '@/lib/levels';
 import CharacterCard from '@/components/CharacterCard';
 import { LegionRaidCharts } from '@/components/LegionRaidCharts';
+import { getCharacterWorldMultiplier } from '@/utils/bossUtils';
 import {
   AlertDialog, AlertDialogTrigger, AlertDialogContent,
   AlertDialogHeader, AlertDialogTitle, AlertDialogDescription,
@@ -1703,12 +1704,9 @@ const Roster = () => {
                               const selectedVariant = selectedVariantByBase[makeGroupKey(key, base)] || variants[0]?.name;
                               const currentVariant = variants.find(v => v.name === selectedVariant) || variants[0];
                               const partySize = partySizes[currentVariant?.name || ''] || 1;
-                              // Determine world multiplier based on main character's world
-                              const mainWorld = mainCharacter?.worldName?.toLowerCase();
-                              const isHighRateWorld = mainWorld && ['kronos', 'hyperion', 'solis'].includes(mainWorld);
-                              const isLowRateWorld = mainWorld && ['bera', 'scania', 'luna'].includes(mainWorld);
-                              const worldMultiplier = isLowRateWorld ? 0.2 : 1; // 1/5 for low-rate worlds, 1 for high-rate worlds
-                              const mesosShare = currentVariant ? Math.floor((currentVariant.mesos / Math.max(1, partySize)) * worldMultiplier) : 0;
+                            // Determine world multiplier based on character's world
+                            const worldMultiplier = getCharacterWorldMultiplier(characters.find(c => c.name === pendingCharacterName) || characters[0]);
+                            const mesosShare = currentVariant ? Math.floor((currentVariant.mesos / Math.max(1, partySize)) * worldMultiplier) : 0;
 
                               return (
                                 <div
@@ -2072,11 +2070,8 @@ const Roster = () => {
                             const selectedVariant = selectedVariantByBase[makeGroupKey(key, base)] || variants[0]?.name;
                             const currentVariant = variants.find(v => v.name === selectedVariant) || variants[0];
                             const partySize = partySizes[currentVariant?.name || ''] || 1;
-                            // Determine world multiplier based on main character's world
-                            const mainWorld = mainCharacter?.worldName?.toLowerCase();
-                            const isHighRateWorld = mainWorld && ['kronos', 'hyperion', 'solis'].includes(mainWorld);
-                            const isLowRateWorld = mainWorld && ['bera', 'scania', 'luna'].includes(mainWorld);
-                            const worldMultiplier = isLowRateWorld ? 0.2 : 1; // 1/5 for low-rate worlds, 1 for high-rate worlds
+                            // Determine world multiplier based on character's world
+                            const worldMultiplier = getCharacterWorldMultiplier(characters.find(c => c.name === pendingCharacterName) || characters[0]);
                             const mesosShare = currentVariant ? Math.floor((currentVariant.mesos / Math.max(1, partySize)) * worldMultiplier) : 0;
 
                             return (
@@ -2237,11 +2232,8 @@ const Roster = () => {
                   <div className="text-sm font-semibold text-primary">
                     {(() => {
                       let totalWeeklyMesos = 0;
-                      // Determine world multiplier based on main character's world
-                      const mainWorld = mainCharacter?.worldName?.toLowerCase();
-                      const isHighRateWorld = mainWorld && ['kronos', 'hyperion', 'solis'].includes(mainWorld);
-                      const isLowRateWorld = mainWorld && ['bera', 'scania', 'luna'].includes(mainWorld);
-                      const worldMultiplier = isLowRateWorld ? 0.2 : 1; // 1/5 for low-rate worlds, 1 for high-rate worlds
+                      // Determine world multiplier based on character's world
+                      const worldMultiplier = getCharacterWorldMultiplier(characters.find(c => c.name === pendingCharacterName) || characters[0]);
 
                       // Calculate weekly bosses earnings
                       groupedWeekly.forEach(([base, variants]) => {
@@ -2529,7 +2521,7 @@ const Roster = () => {
             {(() => {
               const displayCharacter = selectedExpCharacter || mainCharacter;
               return displayCharacter?.additionalData?.expGraphData?.data && displayCharacter.additionalData.expGraphData.data.length > 0 ? (
-                <div className="w-full h-64">
+                <div className="w-full h-56">
                   <ExpChart
                     data={displayCharacter.additionalData.expGraphData.data}
                     labels={displayCharacter.additionalData.expGraphData.labels || []}
@@ -2538,9 +2530,9 @@ const Roster = () => {
                 </div>
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
-                  <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <BarChart3 className="h-10 w-12 mx-auto mb-4 opacity-50" />
                   <p className="text-sm">No experience data available</p>
-                  <p className="text-xs mt-1">
+                  <p className="text-xs mt-1 h-20">
                     {selectedExpCharacter
                       ? `Experience graph will appear here when data is available for ${selectedExpCharacter.name}`
                       : "Experience graph will appear here when data is available"
