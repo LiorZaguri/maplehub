@@ -2446,7 +2446,17 @@ const Roster = () => {
           {mainCharacter ? (
             <CardContent
               className="space-y-4 cursor-pointer transition-colors duration-200"
-              onClick={() => selectCharacterForExpGraph(mainCharacter)}
+              onClick={() => {
+                if (mainCharacter.level >= 260) {
+                  selectCharacterForExpGraph(mainCharacter);
+                } else {
+                  toast({
+                    title: "Level Requirement",
+                    description: "Character must be level 260+ to view exp graph",
+                    variant: "destructive"
+                  });
+                }
+              }}
               title="Click to view experience graph"
             >
               {/* Character Info Row */}
@@ -2567,12 +2577,22 @@ const Roster = () => {
               .map(({ character, fullIndex }, filteredIndex) => (
                 <div
                   key={character.id}
-                  className={`cursor-pointer hover:scale-105 transition-transform duration-200 rounded-lg ${
+                  className={`cursor-pointer transition-transform duration-200 rounded-lg hover:scale-105 ${
                     selectedExpCharacter?.id === character.id
                       ? 'ring-2 ring-primary ring-offset-2 ring-offset-background'
                       : ''
                   }`}
-                  onClick={() => selectCharacterForExpGraph(character)}
+                  onClick={() => {
+                    if (character.level >= 260) {
+                      selectCharacterForExpGraph(character);
+                    } else {
+                      toast({
+                        title: "Level Requirement",
+                        description: "Character must be level 260+ to view exp graph",
+                        variant: "destructive"
+                      });
+                    }
+                  }}
                   title="Click to view experience graph"
                 >
                   <CharacterCard
