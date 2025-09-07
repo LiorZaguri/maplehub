@@ -2567,7 +2567,7 @@ const Roster = () => {
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <User className="h-5 w-5 text-primary" />
-            <span>Characters ({characters.length - (mainCharacter ? 1 : 0)})</span>
+            <span>Characters ({characters.length})</span>
           </CardTitle>
           <p className="text-sm text-muted-foreground mt-2">
             You can click on a Lv. 260+ character to view their experience graph
@@ -2578,7 +2578,6 @@ const Roster = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {characters
               .map((character, fullIndex) => ({ character, fullIndex }))
-              .filter(({ character }) => !character.isMain)
               .map(({ character, fullIndex }, filteredIndex) => (
                 <div
                   key={character.id}
