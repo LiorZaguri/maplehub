@@ -23,6 +23,7 @@ interface CharacterCardProps {
     legionLevel?: number;
     raidPower?: number;
     region?: 'na' | 'eu';
+    worldName?: string;
   };
   variant: 'roster' | 'boss-tracker';
   index?: number;
@@ -91,6 +92,10 @@ const CharacterCard: React.FC<CharacterCardProps> = ({
                 </div>
 
                 <div className="text-sm text-muted-foreground">{character.class}</div>
+
+                {character.worldName && (
+                  <div className="text-xs text-muted-foreground/70">{character.worldName}</div>
+                )}
               </div>
 
               {/* Completion badge for boss tracker */}

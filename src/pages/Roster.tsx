@@ -36,6 +36,7 @@ interface Character {
   legionLevel?: number;
   raidPower?: number;
   region?: 'na' | 'eu'; // Store which region the character was found in
+  worldName?: string; // World name from API
 };
 
 
@@ -1071,7 +1072,8 @@ const Roster = () => {
         isMain: data.isMain,
         legionLevel: data.legionLevel,
         raidPower: data.raidPower,
-        region: data.region // Store which region the character was found in
+        region: data.region, // Store which region the character was found in
+        worldName: data.worldName // World name from API
       };
     } catch (error) {
       throw new Error('Failed to fetch character data from Nexon API');
@@ -1220,8 +1222,9 @@ const Roster = () => {
               raidPower:
                 isMain === false ? null : (data.raidPower ?? char.raidPower ?? null),
 
-              // Add region information for existing characters
+              // Add region and world information for existing characters
               region: data.region ?? char.region,
+              worldName: data.worldName ?? char.worldName,
             } as Character;
           })
         );
@@ -1533,7 +1536,12 @@ const Roster = () => {
                               const selectedVariant = selectedVariantByBase[makeGroupKey(key, base)] || variants[0]?.name;
                               const currentVariant = variants.find(v => v.name === selectedVariant) || variants[0];
                               const partySize = partySizes[currentVariant?.name || ''] || 1;
-                              const mesosShare = currentVariant ? Math.floor(currentVariant.mesos / Math.max(1, partySize)) : 0;
+                              // Determine world multiplier based on main character's world
+                              const mainWorld = mainCharacter?.worldName?.toLowerCase();
+                              const isHighRateWorld = mainWorld && ['kronos', 'hyperion', 'solis'].includes(mainWorld);
+                              const isLowRateWorld = mainWorld && ['bera', 'scania', 'luna'].includes(mainWorld);
+                              const worldMultiplier = isLowRateWorld ? 0.2 : 1; // 1/5 for low-rate worlds, 1 for high-rate worlds
+                              const mesosShare = currentVariant ? Math.floor((currentVariant.mesos / Math.max(1, partySize)) * worldMultiplier) : 0;
 
                               return (
                                 <div
@@ -1897,7 +1905,12 @@ const Roster = () => {
                             const selectedVariant = selectedVariantByBase[makeGroupKey(key, base)] || variants[0]?.name;
                             const currentVariant = variants.find(v => v.name === selectedVariant) || variants[0];
                             const partySize = partySizes[currentVariant?.name || ''] || 1;
-                            const mesosShare = currentVariant ? Math.floor(currentVariant.mesos / Math.max(1, partySize)) : 0;
+                            // Determine world multiplier based on main character's world
+                            const mainWorld = mainCharacter?.worldName?.toLowerCase();
+                            const isHighRateWorld = mainWorld && ['kronos', 'hyperion', 'solis'].includes(mainWorld);
+                            const isLowRateWorld = mainWorld && ['bera', 'scania', 'luna'].includes(mainWorld);
+                            const worldMultiplier = isLowRateWorld ? 0.2 : 1; // 1/5 for low-rate worlds, 1 for high-rate worlds
+                            const mesosShare = currentVariant ? Math.floor((currentVariant.mesos / Math.max(1, partySize)) * worldMultiplier) : 0;
 
                             return (
                               <div
@@ -2057,6 +2070,12 @@ const Roster = () => {
                   <div className="text-sm font-semibold text-primary">
                     {(() => {
                       let totalWeeklyMesos = 0;
+                      // Determine world multiplier based on main character's world
+                      const mainWorld = mainCharacter?.worldName?.toLowerCase();
+                      const isHighRateWorld = mainWorld && ['kronos', 'hyperion', 'solis'].includes(mainWorld);
+                      const isLowRateWorld = mainWorld && ['bera', 'scania', 'luna'].includes(mainWorld);
+                      const worldMultiplier = isLowRateWorld ? 0.2 : 1; // 1/5 for low-rate worlds, 1 for high-rate worlds
+
                       // Calculate weekly bosses earnings
                       groupedWeekly.forEach(([base, variants]) => {
                         const gkey = makeGroupKey('weekly', base);
@@ -2066,7 +2085,7 @@ const Roster = () => {
                           const variant = variants.find(v => v.name === selectedVariant);
                           if (variant) {
                             const partySize = partySizes[variant.name] || 1;
-                            totalWeeklyMesos += Math.floor(variant.mesos / Math.max(1, partySize));
+                            totalWeeklyMesos += Math.floor((variant.mesos / Math.max(1, partySize)) * worldMultiplier);
                           }
                         }
                       });
@@ -2080,7 +2099,7 @@ const Roster = () => {
                           if (variant) {
                             const partySize = partySizes[variant.name] || 1;
                             // Assume 7 days per week for daily bosses
-                            totalWeeklyMesos += Math.floor(variant.mesos / Math.max(1, partySize)) * 7;
+                            totalWeeklyMesos += Math.floor((variant.mesos / Math.max(1, partySize)) * 7 * worldMultiplier);
                           }
                         }
                       });
@@ -2213,98 +2232,123 @@ const Roster = () => {
         </DialogContent>
       </Dialog>
 
-      <Card className="card-gaming">
-        <CardHeader>
-          {mainCharacter && ( 
-            <div className='absolute right-10 '>
-              <Button
-                    variant="ghost"
-                    size="sm"
-                    title="Edit bosses"
-                    onClick={() => openBossEditor(mainCharacter.name)}
-                    className=""
-                  >
-                    <Pencil className="" />
-                    Edit
-              </Button>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-red-500"
-                    aria-label="Delete character"
-                    title="Delete character"
-                  >
-                    <XIcon className="h-4 w-4" aria-hidden="true" />
-                  </Button>
-                </AlertDialogTrigger>
-
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete {mainCharacter.name}?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This will remove the character from your roster. This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      className="bg-red-600 hover:bg-red-700"
-                      onClick={() =>
-                        setCharacters(prev => prev.filter(c => c.id !== mainCharacter.id))
-                      }
+      {/* Main Character with empty block on the right */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="card-gaming">
+          <CardHeader>
+            {mainCharacter && (
+              <>
+                <Button
+                      variant="ghost"
+                      size="sm"
+                      title="Edit bosses"
+                      onClick={() => openBossEditor(mainCharacter.name)}
+                      className="absolute top-4 right-4"
                     >
-                      Delete
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div> 
-            )
-          } 
-          <CardTitle className="flex items-center space-x-2">
-            <Trophy className="h-5 w-5 text-amber-400" aria-hidden="true" />
-            <span>Main Character</span>
-          </CardTitle>
-        </CardHeader>
+                      <Pencil className="h-4 w-4" />
+                      Edit
+                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute bottom-4 right-4 text-red-500 hover:text-red-600"
+                      aria-label="Delete character"
+                      title="Delete character"
+                    >
+                      <XIcon className="h-4 w-4" aria-hidden="true" />
+                    </Button>
+                  </AlertDialogTrigger>
 
-        {mainCharacter ? (
-          <CardContent className="flex items-center space-x-4">
-            {/* Avatar */}
-            <img
-              src={mainCharacter.avatarUrl}
-              alt={mainCharacter.name}
-              className="w-22 h-22 rounded-md"
-            />
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete {mainCharacter.name}?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will remove the character from your roster. This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        className="bg-red-600 hover:bg-red-700"
+                        onClick={() =>
+                          setCharacters(prev => prev.filter(c => c.id !== mainCharacter.id))
+                        }
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </>
+              )
+            }
+            <CardTitle className="flex items-center space-x-2">
+              <Trophy className="h-5 w-5 text-amber-400" aria-hidden="true" />
+              <span>Main Character</span>
+            </CardTitle>
+          </CardHeader>
 
-            <div className="flex flex-col">
-              {/* Name + Level/Class */}
-              <span className="font-semibold text-lg text-white">
-                {mainCharacter.name}
-              </span>
-              <span className="text-sm text-gray-400">
-                Lv. {mainCharacter.level} ({getLevelProgress(mainCharacter.level, mainCharacter.exp)}%) — {mainCharacter.class}
-              </span>
+          {mainCharacter ? (
+            <CardContent className="flex items-center space-x-4">
+              {/* Avatar */}
+              <img
+                src={mainCharacter.avatarUrl}
+                alt={mainCharacter.name}
+                className="w-22 h-22 rounded-md"
+              />
 
-              {/* Legion / RaidPower badges */}
-              <div className="mt-2 flex space-x-2">
-                <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-md">
-                  Legion: {mainLegion?.toLocaleString() ?? "N/A"}
+              <div className="flex flex-col">
+                {/* Name + Level/Class */}
+                <span className="font-semibold text-lg text-white">
+                  {mainCharacter.name}
                 </span>
-                <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-md">
-                  Raid Power: {mainRaidPower?.toLocaleString() ?? "N/A"}
+                <span className="text-sm text-gray-400">
+                  Lv. {mainCharacter.level} ({getLevelProgress(mainCharacter.level, mainCharacter.exp)}%) — {mainCharacter.class}
                 </span>
+
+                {mainCharacter.worldName && (
+                  <span className="text-xs text-muted-foreground/70">
+                    {mainCharacter.worldName}
+                  </span>
+                )}
+
+                {/* Legion / RaidPower badges */}
+                <div className="mt-2 flex space-x-2">
+                  <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-md">
+                    Legion: {mainLegion?.toLocaleString() ?? "N/A"}
+                  </span>
+                  <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-md">
+                    Raid Power: {mainRaidPower?.toLocaleString() ?? "N/A"}
+                  </span>
+                </div>
               </div>
+            </CardContent>
+          ) : (
+            <CardContent className="text-sm text-gray-400">
+              No main character detected.
+              <p className='text-xs'>We auto-detect the main character as the highest-level on the account.</p>
+            </CardContent>
+          )}
+        </Card>
+
+        {/* Empty block on the right */}
+        <Card className="card-gaming">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <span>Additional Info</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center text-muted-foreground">
+              <p>This space is reserved for future features.</p>
+              <p className="text-sm mt-2">You can add stats, achievements, or other information here.</p>
             </div>
           </CardContent>
-        ) : (
-          <CardContent className="text-sm text-gray-400">
-            No main character detected.
-            <p className='text-xs'>We auto-detect the main character as the highest-level on the account.</p>
-          </CardContent>
-        )}
-      </Card>
+        </Card>
+      </div>
+
       <Card className="card-gaming">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">

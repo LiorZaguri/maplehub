@@ -1,4 +1,0 @@
-project_id = "ufbyqlficreixurzzgnm"
-
-[functions.nexon-character-lookup]
-verify_jwt = false
