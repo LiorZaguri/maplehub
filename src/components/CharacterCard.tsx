@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ArrowUp, ArrowDown, Pencil, MoreVertical, CheckSquare, XCircle, Star } from 'lucide-react';
@@ -10,6 +10,7 @@ import {
   AlertDialogHeader, AlertDialogTitle, AlertDialogDescription,
   AlertDialogFooter, AlertDialogCancel, AlertDialogAction
 } from "@/components/ui/alert-dialog";
+
 
 interface CharacterCardProps {
   character: {
@@ -24,6 +25,22 @@ interface CharacterCardProps {
     raidPower?: number;
     region?: 'na' | 'eu';
     worldName?: string;
+    additionalData?: {
+      rankings?: Record<string, number | null>;
+      legion?: {
+        rank?: number;
+        legionLevel?: number;
+        legionPower?: number;
+        timeToCap?: string;
+      };
+      achievement?: {
+        rank?: number;
+        tier?: string;
+        score?: number;
+      };
+      expData?: Record<string, string | number | null>;
+      lastUpdated?: string;
+    };
   };
   variant: 'roster' | 'boss-tracker';
   index?: number;
@@ -56,6 +73,7 @@ const CharacterCard: React.FC<CharacterCardProps> = ({
   completionStats,
   allBossesChecked = false
 }) => {
+
   const pct = getLevelProgress(character.level, character.exp || 0);
 
   return (
@@ -144,13 +162,18 @@ const CharacterCard: React.FC<CharacterCardProps> = ({
         </div>
       </div>
 
+
+
       {variant === 'roster' ? (
         <div className="pr-3 pl-3 flex items-center gap-2 pt-1">
           <Button
             variant="ghost"
             size="sm"
             title="Move up"
-            onClick={() => onMoveUp?.(index)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onMoveUp?.(index);
+            }}
             className="h-7 w-7 p-0 flex-shrink-0"
           >
             <ArrowUp className="h-3 w-3" />
@@ -159,7 +182,10 @@ const CharacterCard: React.FC<CharacterCardProps> = ({
             variant="ghost"
             size="sm"
             title="Move down"
-            onClick={() => onMoveDown?.(index)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onMoveDown?.(index);
+            }}
             className="h-7 w-7 p-0 flex-shrink-0"
           >
             <ArrowDown className="h-3 w-3" />
@@ -168,7 +194,10 @@ const CharacterCard: React.FC<CharacterCardProps> = ({
             variant="ghost"
             size="sm"
             title="Edit bosses"
-            onClick={() => onEditBosses?.(character.name)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onEditBosses?.(character.name);
+            }}
             className="flex-1 text-xs"
           >
             <Pencil className="h-3 w-3 mr-1" />
@@ -181,12 +210,13 @@ const CharacterCard: React.FC<CharacterCardProps> = ({
                 size="icon"
                 title="More actions"
                 className="h-7 w-7 p-0 flex-shrink-0"
+                onClick={(e) => e.stopPropagation()}
               >
                 <MoreVertical className="h-3 w-3" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {onSetAsMain && !character.isMain && (
+              {onSetAsMain && !character.isMain && character.level >= 260 && (
                 <DropdownMenuItem onClick={() => onSetAsMain(character.id)}>
                   <Star className="h-4 w-4 mr-2" /> Set as Main
                 </DropdownMenuItem>

@@ -4,6 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import {
+  ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from '@/components/ui/chart';
+import { Bar, BarChart, CartesianGrid, XAxis } from 'recharts';
 
 import { Plus, RefreshCw, User, Clock, Pencil, XIcon, ArrowUp, ArrowDown, Trophy, Calendar, BarChart3, RotateCcw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -15,13 +22,126 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input as UiInput } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { getLevelProgress } from '@/lib/levels';
+import { getLevelProgress, getExpForLevel } from '@/lib/levels';
 import CharacterCard from '@/components/CharacterCard';
+import { LegionRaidCharts } from '@/components/LegionRaidCharts';
 import {
   AlertDialog, AlertDialogTrigger, AlertDialogContent,
   AlertDialogHeader, AlertDialogTitle, AlertDialogDescription,
   AlertDialogFooter, AlertDialogCancel, AlertDialogAction
 } from "@/components/ui/alert-dialog";
+
+// Format large numbers with consistent units
+const formatNumber = (num: number): string => {
+  if (num >= 1e12) return (num / 1e12).toFixed(1) + 'T';
+  if (num >= 1e9) return (num / 1e9).toFixed(1) + 'B';
+  if (num >= 1e6) return (num / 1e6).toFixed(1) + 'M';
+  if (num >= 1e3) return (num / 1e3).toFixed(1) + 'K';
+  return num.toString();
+};
+
+// Format numbers for axis labels with consistent scale
+const formatAxisNumber = (num: number): string => {
+  if (num >= 1e12) return (num / 1e12).toFixed(1) + 'T';
+  if (num >= 1e9) return (num / 1e9).toFixed(1) + 'B';
+  if (num >= 1e6) return (num / 1e6).toFixed(1) + 'M';
+  if (num >= 1e3) return (num / 1e3).toFixed(1) + 'K';
+  return num.toString();
+};
+
+// Format date for axis labels
+const formatDateLabel = (dateStr: string): string => {
+  try {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric'
+    });
+  } catch {
+    return dateStr;
+  }
+};
+
+// Bar chart component for experience data using Recharts
+const ExpChart = ({
+  data,
+  labels,
+  timePeriod
+}: {
+  data: number[];
+  labels: string[];
+  timePeriod: '7D' | '14D' | '30D'
+}) => {
+  if (!data || data.length === 0) return null;
+
+  // Filter data based on time period
+  const daysToShow = timePeriod === '7D' ? 7 : timePeriod === '14D' ? 14 : 30;
+  const filteredData = data.slice(-daysToShow);
+  const filteredLabels = labels.slice(-daysToShow);
+
+  // Prepare chart data
+  const chartData = filteredData.map((value, index) => ({
+    date: formatDateLabel(filteredLabels[index] || `Day ${index + 1}`),
+    experience: value,
+    fullDate: filteredLabels[index] || `Day ${index + 1}`
+  }));
+
+  // Chart configuration
+  const chartConfig = {
+    experience: {
+      label: "Experience",
+      color: "hsl(var(--primary))",
+    },
+  };
+
+  return (
+    <div className="w-full h-full">
+      <ChartContainer config={chartConfig} className="h-full w-full">
+        <BarChart
+          accessibilityLayer
+          data={chartData}
+          margin={{
+            top: 20,
+            right: 30,
+            left: 20,
+            bottom: 20,
+          }}
+        >
+          <CartesianGrid vertical={false} />
+          <XAxis
+            dataKey="date"
+            tickLine={false}
+            tickMargin={10}
+            axisLine={false}
+            tickFormatter={(value) => value.slice(0, 6)} // Show first 6 chars to avoid crowding
+          />
+          <ChartTooltip
+            cursor={false}
+            content={({ active, payload, label }) => {
+              if (active && payload && payload.length) {
+                const data = payload[0].payload;
+                return (
+                  <div className="bg-popover text-popover-foreground text-sm px-2 py-1 rounded-md shadow-lg border border-border">
+                    <div className="font-medium">{data.fullDate}</div>
+                    <div className="text-primary">
+                      {formatNumber(data.experience)} exp
+                    </div>
+                  </div>
+                );
+              }
+              return null;
+            }}
+          />
+          <Bar
+            dataKey="experience"
+            fill="var(--color-experience)"
+            radius={4}
+          />
+        </BarChart>
+      </ChartContainer>
+    </div>
+  );
+};
 
 interface Character {
   id: string;
@@ -37,6 +157,26 @@ interface Character {
   raidPower?: number;
   region?: 'na' | 'eu'; // Store which region the character was found in
   worldName?: string; // World name from API
+  additionalData?: {
+    rankings?: Record<string, number | null>;
+    legion?: {
+      rank?: number;
+      legionLevel?: number;
+      legionPower?: number;
+      timeToCap?: string;
+    };
+    achievement?: {
+      rank?: number;
+      tier?: string;
+      score?: number;
+    };
+    expData?: Record<string, string | number | null>;
+    expGraphData?: {
+      data?: number[];
+      labels?: string[];
+    };
+    lastUpdated?: string;
+  };
 };
 
 
@@ -1062,6 +1202,8 @@ const Roster = () => {
         throw new Error(error.message || 'Failed to fetch character data');
       }
 
+
+
       return {
         name: data.name,
         class: getJobName(data.jobID, data.jobDetail),
@@ -1073,7 +1215,8 @@ const Roster = () => {
         legionLevel: data.legionLevel,
         raidPower: data.raidPower,
         region: data.region, // Store which region the character was found in
-        worldName: data.worldName // World name from API
+        worldName: data.worldName, // World name from API
+        additionalData: data.additionalData // Include additional data for CharacterCard
       };
     } catch (error) {
       throw new Error('Failed to fetch character data from Nexon API');
@@ -1149,6 +1292,8 @@ const Roster = () => {
   const [mainLegion, setMainLegion] = useState<number | null>(null);
   const [mainRaidPower, setMainRaidPower] = useState<number | null>(null);
   const [mainCharacter, setMainCharacter] = useState<Character | null>(null);
+  const [expChartTimePeriod, setExpChartTimePeriod] = useState<'7D' | '14D' | '30D'>('14D');
+  const [selectedExpCharacter, setSelectedExpCharacter] = useState<Character | null>(null);
 
   // Function to enforce single main character
   const enforceSingleMain = (chars: Character[]): Character[] => {
@@ -1174,6 +1319,11 @@ const Roster = () => {
       );
       return enforceSingleMain(updated);
     });
+  };
+
+  // Function to select a character for experience graph
+  const selectCharacterForExpGraph = (character: Character) => {
+    setSelectedExpCharacter(character);
   };
 
   useEffect(() => {
@@ -1225,6 +1375,9 @@ const Roster = () => {
               // Add region and world information for existing characters
               region: data.region ?? char.region,
               worldName: data.worldName ?? char.worldName,
+
+              // Preserve additional data for main characters and high-level non-main characters (260+)
+              additionalData: (isMain || char.level >= 260) ? (data.additionalData ?? char.additionalData) : undefined,
             } as Character;
           })
         );
@@ -2179,7 +2332,7 @@ const Roster = () => {
                   </div>
                 );
               }
-
+                
               return (
                 <div>
                   <p className="text-sm text-muted-foreground mb-3">
@@ -2232,55 +2385,55 @@ const Roster = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Main Character with empty block on the right */}
+      {/* Main Character and Experience Graph - Equal Heights */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="card-gaming">
+        <Card className={`card-gaming ${selectedExpCharacter?.id === mainCharacter?.id ? 'ring-2 ring-primary ring-offset-2 ring-offset-background rounded-lg' : ''}`}>
           <CardHeader>
             {mainCharacter && (
               <>
-                <Button
-                      variant="ghost"
-                      size="sm"
-                      title="Edit bosses"
-                      onClick={() => openBossEditor(mainCharacter.name)}
-                      className="absolute top-4 right-4"
-                    >
-                      <Pencil className="h-4 w-4" />
-                      Edit
-                </Button>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="absolute bottom-4 right-4 text-red-500 hover:text-red-600"
-                      aria-label="Delete character"
-                      title="Delete character"
-                    >
-                      <XIcon className="h-4 w-4" aria-hidden="true" />
-                    </Button>
-                  </AlertDialogTrigger>
-
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete {mainCharacter.name}?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This will remove the character from your roster. This action cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        className="bg-red-600 hover:bg-red-700"
-                        onClick={() =>
-                          setCharacters(prev => prev.filter(c => c.id !== mainCharacter.id))
-                        }
+                <div className="absolute top-4 right-4 flex gap-2">
+                  <Button
+                        variant="ghost"
+                        size="sm"
+                        title="Edit bosses"
+                        onClick={() => openBossEditor(mainCharacter.name)}
                       >
-                        Delete
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                        <Pencil className="h-4 w-4" />
+                        Edit
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-red-500 hover:text-red-600"
+                        aria-label="Delete character"
+                        title="Delete character"
+                      >
+                        <XIcon className="h-4 w-4" aria-hidden="true" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete {mainCharacter.name}?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will remove the character from your roster. This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          className="bg-red-600 hover:bg-red-700"
+                          onClick={() =>
+                            setCharacters(prev => prev.filter(c => c.id !== mainCharacter.id))
+                          }
+                        >
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               </>
               )
             }
@@ -2291,39 +2444,49 @@ const Roster = () => {
           </CardHeader>
 
           {mainCharacter ? (
-            <CardContent className="flex items-center space-x-4">
-              {/* Avatar */}
-              <img
-                src={mainCharacter.avatarUrl}
-                alt={mainCharacter.name}
-                className="w-22 h-22 rounded-md"
-              />
+            <CardContent
+              className="space-y-4 cursor-pointer transition-colors duration-200"
+              onClick={() => selectCharacterForExpGraph(mainCharacter)}
+              title="Click to view experience graph"
+            >
+              {/* Character Info Row */}
+              <div className="flex items-center space-x-4">
+                {/* Avatar */}
+                <img
+                  src={mainCharacter.avatarUrl}
+                  alt={mainCharacter.name}
+                  className="w-22 h-22 rounded-md"
+                />
 
-              <div className="flex flex-col">
-                {/* Name + Level/Class */}
-                <span className="font-semibold text-lg text-white">
-                  {mainCharacter.name}
-                </span>
-                <span className="text-sm text-gray-400">
-                  Lv. {mainCharacter.level} ({getLevelProgress(mainCharacter.level, mainCharacter.exp)}%) — {mainCharacter.class}
-                </span>
+                <div className="flex flex-col">
+                  {/* Name + Level/Class */}
+                  <span className="font-semibold text-lg text-white">
+                    {mainCharacter.name}
+                  </span>
+                  <span className="text-sm text-gray-400">
+                    Lv. {mainCharacter.level} ({getLevelProgress(mainCharacter.level, mainCharacter.exp)}%) — {mainCharacter.class}
+                  </span>
 
-                {mainCharacter.worldName && (
-                  <span className="text-xs text-muted-foreground/70">
-                    {mainCharacter.worldName}
-                  </span>
-                )}
+                  {mainCharacter.worldName && (
+                    <span className="text-xs text-muted-foreground/70">
+                      {mainCharacter.worldName}
+                    </span>
+                  )}
 
-                {/* Legion / RaidPower badges */}
-                <div className="mt-2 flex space-x-2">
-                  <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-md">
-                    Legion: {mainLegion?.toLocaleString() ?? "N/A"}
-                  </span>
-                  <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-md">
-                    Raid Power: {mainRaidPower?.toLocaleString() ?? "N/A"}
-                  </span>
+
                 </div>
               </div>
+
+              {/* Experience Stats - Inline with badges */}
+
+              {/* Legion and Raid Power Charts */}
+              <LegionRaidCharts
+                legionLevel={mainLegion}
+                raidPower={mainRaidPower}
+                level={mainCharacter.level}
+                exp={mainCharacter.exp}
+                expData={mainCharacter.additionalData?.expData}
+              />
             </CardContent>
           ) : (
             <CardContent className="text-sm text-gray-400">
@@ -2333,15 +2496,57 @@ const Roster = () => {
           )}
         </Card>
 
-        {/* Empty block on the right */}
+        {/* Experience Graph Card - Matching Height */}
         <Card className="card-gaming">
           <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <span>Additional Info</span>
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center space-x-2">
+                <BarChart3 className="h-5 w-5 text-primary" />
+                <span>Exp Graph</span>
+              </CardTitle>
+              {/* Time Period Selector - Moved to top right */}
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-medium text-muted-foreground">Last:</span>
+                <div className="flex gap-2">
+                  {(['7D', '14D', '30D'] as const).map((period) => (
+                    <Button
+                      key={period}
+                      variant={expChartTimePeriod === period ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setExpChartTimePeriod(period)}
+                      className="text-xs"
+                    >
+                      {period}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
-
+            {(() => {
+              const displayCharacter = selectedExpCharacter || mainCharacter;
+              return displayCharacter?.additionalData?.expGraphData?.data && displayCharacter.additionalData.expGraphData.data.length > 0 ? (
+                <div className="w-full h-64">
+                  <ExpChart
+                    data={displayCharacter.additionalData.expGraphData.data}
+                    labels={displayCharacter.additionalData.expGraphData.labels || []}
+                    timePeriod={expChartTimePeriod}
+                  />
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p className="text-sm">No experience data available</p>
+                  <p className="text-xs mt-1">
+                    {selectedExpCharacter
+                      ? `Experience graph will appear here when data is available for ${selectedExpCharacter.name}`
+                      : "Experience graph will appear here when data is available"
+                    }
+                  </p>
+                </div>
+              );
+            })()}
           </CardContent>
         </Card>
       </div>
@@ -2360,17 +2565,27 @@ const Roster = () => {
               .map((character, fullIndex) => ({ character, fullIndex }))
               .filter(({ character }) => !character.isMain)
               .map(({ character, fullIndex }, filteredIndex) => (
-                <CharacterCard
+                <div
                   key={character.id}
-                  character={character}
-                  variant="roster"
-                  index={filteredIndex}
-                  onMoveUp={() => moveCharacter(fullIndex, -1)}
-                  onMoveDown={() => moveCharacter(fullIndex, 1)}
-                  onEditBosses={() => openBossEditor(character.name)}
-                  onRemove={() => setCharacters(prev => prev.filter(c => c.id !== character.id))}
-                  onSetAsMain={setCharacterAsMain}
-                />
+                  className={`cursor-pointer hover:scale-105 transition-transform duration-200 rounded-lg ${
+                    selectedExpCharacter?.id === character.id
+                      ? 'ring-2 ring-primary ring-offset-2 ring-offset-background'
+                      : ''
+                  }`}
+                  onClick={() => selectCharacterForExpGraph(character)}
+                  title="Click to view experience graph"
+                >
+                  <CharacterCard
+                    character={character}
+                    variant="roster"
+                    index={filteredIndex}
+                    onMoveUp={() => moveCharacter(fullIndex, -1)}
+                    onMoveDown={() => moveCharacter(fullIndex, 1)}
+                    onEditBosses={() => openBossEditor(character.name)}
+                    onRemove={() => setCharacters(prev => prev.filter(c => c.id !== character.id))}
+                    onSetAsMain={setCharacterAsMain}
+                  />
+                </div>
               ))}
           </div>
         </CardContent>
