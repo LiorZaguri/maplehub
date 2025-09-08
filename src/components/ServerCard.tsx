@@ -1,12 +1,31 @@
 import { Server } from "@/types/server";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { StatusBadge } from "./StatusBadge";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Server as ServerIcon, Users, ShoppingCart } from "lucide-react";
+import { Clock, Server as ServerIcon, Wifi, WifiOff, Activity, Crown, Shield, Zap, Sword, Star, Flame } from "lucide-react";
 
 interface ServerCardProps {
   server: Server;
 }
+
+// Get server-specific icon based on server name
+const getServerIcon = (serverName: string) => {
+  const iconMap: Record<string, React.ComponentType<any>> = {
+    // North America servers
+    'Scania': Crown,      // Scania - the original server, like a crown
+    'Bera': Shield,       // Bera - strong and protective
+    'Kronos': Zap,        // Kronos - time/lightning themed
+    'Hyperion': Star,     // Hyperion - celestial/titan themed
+    'Challengers-Interactive': Sword,  // Interactive - combat focused
+    'Challengers-Heroic': Flame,       // Heroic - fire/heroism themed
+    // Europe servers
+    'Luna': Star,         // Luna - moon/celestial themed
+    'Solis': Zap,         // Solis - sun/solar themed
+    'Challengers-Interactive-Europe': Sword,  // Interactive EU - combat focused
+    'Challengers-Heroic-Europe': Flame,       // Heroic EU - fire/heroism themed
+  };
+  
+  return iconMap[serverName] || ServerIcon; // Default to ServerIcon if not found
+};
 
 export const ServerCard = ({ server }: ServerCardProps) => {
   // Calculate service statistics
@@ -14,8 +33,10 @@ export const ServerCard = ({ server }: ServerCardProps) => {
     .filter(([key]) => key.startsWith('game'))
     .map(([key, value]) => ({ name: key, status: value as number }));
 
-  const onlineChannels = gameChannels.filter(channel => channel.status === 1).length;
-  const totalChannels = gameChannels.length;
+  // Only count channels that actually exist (status 1 or 0), ignore placeholders (-1)
+  const existingChannels = gameChannels.filter(channel => channel.status !== -1);
+  const onlineChannels = existingChannels.filter(channel => channel.status === 1).length;
+  const totalChannels = existingChannels.length;
 
   const loginServices = Object.entries(server)
     .filter(([key]) => key.startsWith('login'))
@@ -29,90 +50,144 @@ export const ServerCard = ({ server }: ServerCardProps) => {
   ];
 
   const allLoginOnline = loginServices.every(service => service.status === 1);
-  const shopOnline = server.shop00 === 1;
-
+  const allServicesOnline = systemServices.every(service => service.status === 1);
+  const isFullyOnline = allLoginOnline && allServicesOnline && onlineChannels === totalChannels;
+  
+  // More nuanced status logic
+  const hasAnyLoginOnline = loginServices.some(service => service.status === 1);
+  const hasAnyChannelsOnline = onlineChannels > 0;
+  const hasAnyServicesOnline = systemServices.some(service => service.status === 1);
+  
+  // Check if this is an EU server (more lenient requirements)
+  const isEUServer = [30, 46, 49, 54].includes(server.worldId);
+  const loginCount = loginServices.filter(s => s.status === 1).length;
+  const isEULoginAcceptable = isEUServer && loginCount >= 1; // EU servers need at least 1/3 login servers
+  
+  // Determine overall status
+  let statusLevel = 'offline';
+  let statusText = 'OFFLINE';
+  let statusColor = 'destructive';
+  
+  if (isFullyOnline) {
+    statusLevel = 'online';
+    statusText = 'ONLINE';
+    statusColor = 'default';
+  } else if (isEULoginAcceptable && hasAnyChannelsOnline) {
+    // EU servers with at least 1 login server and some channels
+    statusLevel = 'online';
+    statusText = 'ONLINE';
+    statusColor = 'default';
+  } else if (hasAnyLoginOnline && hasAnyChannelsOnline) {
+    statusLevel = 'partial';
+    statusText = 'PARTIAL';
+    statusColor = 'secondary';
+  } else if (hasAnyLoginOnline || hasAnyChannelsOnline || hasAnyServicesOnline) {
+    statusLevel = 'limited';
+    statusText = 'LIMITED';
+    statusColor = 'secondary';
+  }
+  
   const lastUpdated = new Date(server.logDate).toLocaleTimeString();
+  const ServerIconComponent = getServerIcon(server.worldName);
 
   return (
-    <Card className="group hover:shadow-lg transition-all duration-300 border-border/50 bg-gradient-to-br from-card to-card/80 hover:from-card hover:to-muted/20">
-      <CardHeader className="pb-4">
+    <Card className="card-gaming group hover:shadow-lg transition-all duration-300 overflow-hidden">
+      {/* Server Header with Status */}
+      <div className={`p-4 border-b ${
+        statusLevel === 'online' ? 'border-primary/30' : 
+        statusLevel === 'partial' ? 'border-accent/30' : 
+        statusLevel === 'limited' ? 'border-orange-500/30' : 
+        'border-destructive/30'
+      }`}>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-xl font-bold text-primary flex items-center gap-2">
-            <ServerIcon className="w-5 h-5" />
-            {server.worldName}
-          </CardTitle>
-          <Badge variant={allLoginOnline ? "default" : "destructive"} className="text-xs">
-            {allLoginOnline ? "Online" : "Offline"}
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-lg ${
+              statusLevel === 'online' ? 'bg-primary/20' : 
+              statusLevel === 'partial' ? 'bg-accent/20' : 
+              statusLevel === 'limited' ? 'bg-orange-500/20' : 
+              'bg-destructive/20'
+            }`}>
+              <ServerIconComponent className={`w-5 h-5 ${
+                statusLevel === 'online' ? 'text-primary' : 
+                statusLevel === 'partial' ? 'text-accent' : 
+                statusLevel === 'limited' ? 'text-orange-500' : 
+                'text-destructive'
+              }`} />
+            </div>
+            <div>
+              <h3 className="font-bold text-lg text-foreground">{server.worldName}</h3>
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                {lastUpdated}
+              </p>
+            </div>
+          </div>
+          <Badge 
+            variant={statusColor as any} 
+            className={`${
+              statusLevel === 'online' ? "progress-complete" : 
+              statusLevel === 'partial' ? "bg-yellow-500/20 text-yellow-800 border-yellow-500/30" : 
+              statusLevel === 'limited' ? "bg-orange-500/20 text-orange-800 border-orange-500/30" : 
+              "progress-incomplete"
+            } text-xs font-bold`}
+          >
+            {statusText}
           </Badge>
         </div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Clock className="w-4 h-4" />
-          Last updated: {lastUpdated}
-        </div>
-      </CardHeader>
+      </div>
 
-      <CardContent className="space-y-4">
-        {/* Login Status */}
-        <div className="space-y-2">
-          <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <Users className="w-4 h-4 text-primary" />
-            Login Services
-          </h4>
-          <div className="flex flex-wrap gap-2">
-            {loginServices.map((service, index) => (
-              <StatusBadge
-                key={service.name}
-                status={service.status}
-                label={`Login ${index + 1}`}
-              />
-            ))}
+      <CardContent className="p-4">
+        {/* Quick Stats Row */}
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-1 mb-1">
+              <Activity className="w-3 h-3 text-primary" />
+              <span className="text-xs font-medium text-muted-foreground">Login</span>
+            </div>
+            <div className={`text-lg font-bold ${allLoginOnline ? 'text-primary' : 'text-destructive'}`}>
+              {loginServices.filter(s => s.status === 1).length}/{loginServices.length}
+            </div>
+          </div>
+          
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-1 mb-1">
+              <ServerIcon className="w-3 h-3 text-primary" />
+              <span className="text-xs font-medium text-muted-foreground">Channels</span>
+            </div>
+            <div className={`text-lg font-bold ${onlineChannels === totalChannels ? 'text-primary' : 'text-destructive'}`}>
+              {onlineChannels}/{totalChannels}
+            </div>
+          </div>
+          
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-1 mb-1">
+              <Activity className="w-3 h-3 text-primary" />
+              <span className="text-xs font-medium text-muted-foreground">Services</span>
+            </div>
+            <div className={`text-lg font-bold ${allServicesOnline ? 'text-primary' : 'text-destructive'}`}>
+              {systemServices.filter(s => s.status === 1).length}/{systemServices.length}
+            </div>
           </div>
         </div>
 
-        {/* Game Channels Grid */}
+        {/* Channel Status Grid */}
         <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <ServerIcon className="w-4 h-4 text-primary" />
-              Game Channels
-            </h4>
-            <span className="text-xs text-muted-foreground">
-              {onlineChannels}/{totalChannels} online
-            </span>
-          </div>
+          <h4 className="text-xs font-semibold text-foreground">Game Channels</h4>
           <div className="grid grid-cols-8 gap-1">
-            {gameChannels.map((channel, index) => (
+            {existingChannels.map((channel, index) => (
               <div
                 key={channel.name}
                 className={`
-                  text-xs font-medium px-2 py-1 rounded text-center transition-colors
+                  aspect-square rounded text-xs font-bold flex items-center justify-center transition-all duration-200
                   ${channel.status === 1
-                    ? 'bg-green-500/20 text-green-600 border border-green-500/30'
-                    : 'bg-red-500/20 text-red-600 border border-red-500/30'
+                    ? 'bg-success/20 text-success border border-success/30 hover:bg-success/30'
+                    : 'bg-destructive/20 text-destructive border border-destructive/30 hover:bg-destructive/30'
                   }
                 `}
                 title={`Channel ${index + 1}: ${channel.status === 1 ? 'Online' : 'Offline'}`}
               >
                 {index + 1}
               </div>
-            ))}
-          </div>
-        </div>
-
-        {/* System Services */}
-        <div className="space-y-2">
-          <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <ShoppingCart className="w-4 h-4 text-primary" />
-            System Services
-          </h4>
-          <div className="grid grid-cols-2 gap-2">
-            {systemServices.map((service) => (
-              <StatusBadge
-                key={service.name}
-                status={service.status}
-                label={service.name}
-                className="justify-center"
-              />
             ))}
           </div>
         </div>

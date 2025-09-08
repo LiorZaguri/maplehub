@@ -11,14 +11,14 @@ export const StatusBadge = ({ status, label, className }: StatusBadgeProps) => {
 
   return (
     <div className={cn(
-      "flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200",
+      "flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium transition-all duration-200",
       isOnline
         ? "bg-green-500/20 text-green-600 border border-green-500/30"
         : "bg-red-500/20 text-red-600 border border-red-500/30",
       className
     )}>
       <div className={cn(
-        "w-2 h-2 rounded-full",
+        "w-1.5 h-1.5 rounded-full",
         isOnline ? "bg-green-500 animate-pulse" : "bg-red-500"
       )} />
       {label}

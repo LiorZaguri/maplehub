@@ -11,7 +11,7 @@ export const MaintenanceCard = ({ maintenance, lastChecked }: MaintenanceCardPro
   const isMaintenance = maintenance === true;
 
   return (
-    <Card className="w-full">
+    <Card className="card-gaming w-full">
       <CardHeader className="flex flex-row items-center space-y-0 space-x-2">
         {isMaintenance ? (
           <AlertTriangle className="w-5 h-5 text-orange-500" />
@@ -23,12 +23,9 @@ export const MaintenanceCard = ({ maintenance, lastChecked }: MaintenanceCardPro
       <CardContent>
         <div className="flex items-center gap-2">
           {isMaintenance ? (
-            <Badge variant="destructive">Maintenance In Progress</Badge>
+            <Badge variant="destructive" className="progress-incomplete">Maintenance In Progress</Badge>
           ) : (
-            <Badge
-              variant="default"
-              className="bg-green-500/10 text-green-600 border-green-500/20"
-            >
+            <Badge className="progress-complete">
               Game Is Up
             </Badge>
           )}
