@@ -129,14 +129,17 @@ export const getCollectedValue = (
   progressByCharacter: Record<string, CharacterBossProgress>,
   enabledByCharacter: BossEnabledByCharacter,
   partyByCharacter: Record<string, Record<string, number>>,
-  monthlyBosses: BossInfo[]
+  monthlyBosses: BossInfo[],
+  roster: RosterCharacter[] = []
 ): number => {
   const bosses = progressByCharacter[characterName] || {};
+  const character = roster.find(c => c.name === characterName);
+  const worldMultiplier = character ? getCharacterWorldMultiplier(character) : 1.0;
 
   return bossList.reduce((sum, b) => {
     const isEnabled = isBossEnabledForCharacter(characterName, b.name, enabledByCharacter);
     const party = getPartySize(characterName, b.name, partyByCharacter);
-    const share = Math.floor(b.value / party);
+    const share = Math.floor((b.value / party) * worldMultiplier);
 
     return sum + (isEnabled && bosses[b.name] ? share : 0);
   }, 0);
@@ -153,9 +156,12 @@ export const getMaxPossibleValue = (
   tempDisabledByCharacter: BossEnabledByCharacter,
   partyByCharacter: Record<string, Record<string, number>>,
   monthlyBosses: BossInfo[],
-  includeMonthlyChecked = false
+  includeMonthlyChecked = false,
+  roster: RosterCharacter[] = []
 ): number => {
   const bosses = progressByCharacter[characterName] || {};
+  const character = roster.find(c => c.name === characterName);
+  const worldMultiplier = character ? getCharacterWorldMultiplier(character) : 1.0;
   const currentCount = getWeeklyBossCount(characterName, progressByCharacter, enabledByCharacter, tempDisabledByCharacter, [], [], monthlyBosses);
 
   let considered = bossList.filter(b => {
@@ -175,8 +181,8 @@ export const getMaxPossibleValue = (
   if (currentCount >= 14) {
     considered = considered
       .sort((a, b) => {
-        const aVal = Math.floor(a.value / getPartySize(characterName, a.name, partyByCharacter));
-        const bVal = Math.floor(b.value / getPartySize(characterName, b.name, partyByCharacter));
+        const aVal = Math.floor((a.value / getPartySize(characterName, a.name, partyByCharacter)) * worldMultiplier);
+        const bVal = Math.floor((b.value / getPartySize(characterName, b.name, partyByCharacter)) * worldMultiplier);
         return bVal - aVal;
       })
       .slice(0, 14);
@@ -184,7 +190,7 @@ export const getMaxPossibleValue = (
 
   return considered.reduce((sum, b) => {
     const party = getPartySize(characterName, b.name, partyByCharacter);
-    const share = Math.floor(b.value / party);
+    const share = Math.floor((b.value / party) * worldMultiplier);
     return sum + share;
   }, 0);
 };

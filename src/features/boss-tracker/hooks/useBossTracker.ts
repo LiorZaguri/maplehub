@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { RosterCharacter, BossProgressByCharacter, BossEnabledByCharacter, BossPartyByCharacter, FilterType } from '@/types/bossTracker';
-import { BossInfo } from '@/types/bossTracker';
+import { RosterCharacter, BossProgressByCharacter, BossEnabledByCharacter, BossPartyByCharacter, FilterType } from '../types/bossTracker';
+import { BossInfo } from '../types/bossTracker';
 import {
   getPartySize,
   getWeeklyBossCount,
@@ -14,7 +14,7 @@ import {
   getMostRecentResetTimestamp,
   getMostRecentMonthlyResetTimestamp,
   getTimeUntilReset
-} from '@/utils/bossUtils';
+} from '../utils/bossUtils';
 import {
   loadBossProgress,
   saveBossProgress,
@@ -35,8 +35,9 @@ import {
   shouldPerformWeeklyReset,
   shouldPerformMonthlyReset,
   STORAGE_KEYS
-} from '@/services/bossTrackerService';
-import { getBossMeta, listAllBosses, getMaxPartySize } from '@/lib/bossData';
+} from '../services/bossTrackerService';
+import { getBossMeta, getMaxPartySize } from '@/lib/bossData';
+import { getAllBossLists } from '../utils/bossListUtils';
 
 export const useBossTracker = () => {
   const { toast } = useToast();
@@ -45,54 +46,8 @@ export const useBossTracker = () => {
   // Ref to prevent multiple simultaneous disable operations
   const disableInProgressRef = useRef<Record<string, boolean>>({});
 
-  // Build weekly/daily boss lists from the full dataset
-  const allBosses = useMemo(() => listAllBosses(), []);
-  const dailyVariantSet = useMemo(() => new Set<string>([
-    'Normal Zakum',
-    'Normal Magnus',
-    'Normal Hilla',
-    'Normal Papulatus',
-    'Normal Pierre',
-    'Normal Von Bon',
-    'Normal Crimson Queen',
-    'Normal Vellum',
-    'Normal Von Leon',
-    'Hard Von Leon',
-    'Normal Horntail',
-    'Chaos Horntail',
-    'Easy Arkarium',
-    'Normal Arkarium',
-    'Normal Pink Bean',
-    'Normal Ranmaru',
-    'Hard Ranmaru',
-    'Normal Gollux',
-  ]), []);
-  const isMonthlyBase = (base: string) => base.includes('Black Mage');
-  const parseBase = (name: string) => {
-    const parts = name.split(' ');
-    return parts.slice(1).join(' ');
-  };
-
-  const weeklyBosses: BossInfo[] = useMemo(() => {
-    return allBosses
-      .filter(b => {
-        const base = parseBase(b.name);
-        return !dailyVariantSet.has(b.name) && !isMonthlyBase(base);
-      })
-      .map(b => ({ name: b.name, value: b.mesos, defaultParty: 1 }));
-  }, [allBosses, dailyVariantSet]);
-
-  const dailyBosses: BossInfo[] = useMemo(() => {
-    return allBosses
-      .filter(b => dailyVariantSet.has(b.name))
-      .map(b => ({ name: b.name, value: b.mesos, defaultParty: 1 }));
-  }, [allBosses, dailyVariantSet]);
-
-  const monthlyBosses: BossInfo[] = useMemo(() => {
-    return allBosses
-      .filter(b => isMonthlyBase(parseBase(b.name)))
-      .map(b => ({ name: b.name, value: b.mesos, defaultParty: 1 }));
-  }, [allBosses]);
+  // Get boss lists from centralized utility
+  const { weeklyBosses, dailyBosses, monthlyBosses } = useMemo(() => getAllBossLists(), []);
 
   // State management
   const [roster, setRoster] = useState<RosterCharacter[]>(() => {
@@ -109,7 +64,8 @@ export const useBossTracker = () => {
         exp: c.exp,
         isMain: c.isMain,
         raidPower: c.raidPower,
-        legionLevel: c.legionLevel
+        legionLevel: c.legionLevel,
+        worldName: c.worldName
       }));
     } catch {
       return [];
@@ -178,7 +134,8 @@ export const useBossTracker = () => {
             exp: c.exp,
             isMain: c.isMain,
             raidPower: c.raidPower,
-            legionLevel: c.legionLevel
+            legionLevel: c.legionLevel,
+            worldName: c.worldName
           }));
           setRoster([...orderedCharacters, ...newCharacters]);
         } else {
@@ -382,6 +339,7 @@ export const useBossTracker = () => {
     resetAllProgress,
     saveCharacterOrderToStorage,
     setPartyByCharacter,
+    setProgressByCharacter,
     setRoster,
 
     // Utility functions
@@ -390,8 +348,8 @@ export const useBossTracker = () => {
     isBossEnabledForCharacter: (characterName: string, bossName: string) => isBossEnabledForCharacter(characterName, bossName, enabledByCharacter),
     isBossTempDisabledForCharacter: (characterName: string, bossName: string) => isBossTempDisabledForCharacter(characterName, bossName, tempDisabledByCharacter),
     getCompletionStats: (characterName: string, bossList: BossInfo[]) => getCompletionStats(characterName, bossList, progressByCharacter, enabledByCharacter, tempDisabledByCharacter, monthlyBosses),
-    getCollectedValue: (characterName: string, bossList: BossInfo[]) => getCollectedValue(characterName, bossList, progressByCharacter, enabledByCharacter, partyByCharacter, monthlyBosses),
-    getMaxPossibleValue: (characterName: string, bossList: BossInfo[]) => getMaxPossibleValue(characterName, bossList, progressByCharacter, enabledByCharacter, tempDisabledByCharacter, partyByCharacter, monthlyBosses),
+    getCollectedValue: (characterName: string, bossList: BossInfo[]) => getCollectedValue(characterName, bossList, progressByCharacter, enabledByCharacter, partyByCharacter, monthlyBosses, roster),
+    getMaxPossibleValue: (characterName: string, bossList: BossInfo[]) => getMaxPossibleValue(characterName, bossList, progressByCharacter, enabledByCharacter, tempDisabledByCharacter, partyByCharacter, monthlyBosses, false, roster),
     getBossMeta,
     getMaxPartySize,
   };

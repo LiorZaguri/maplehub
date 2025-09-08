@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Filter, RotateCcw } from 'lucide-react';
 import { CharacterFilterType } from '@/lib/filterUtils';
+import { FilterType } from '../types/taskTracker';
 
 interface TaskFiltersProps {
   taskFilter: CharacterFilterType;

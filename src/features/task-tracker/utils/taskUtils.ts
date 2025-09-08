@@ -1,4 +1,4 @@
-import { Task, TaskStats, Character } from '@/types/taskTracker';
+import { Task, TaskStats, Character } from '../types/taskTracker';
 import { taskTemplates, TaskTemplate } from '@/data/taskTemplates';
 
 /**

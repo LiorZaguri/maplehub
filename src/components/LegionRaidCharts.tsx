@@ -134,7 +134,7 @@ export function LegionRaidCharts({ legionLevel, raidPower, level, exp, expData }
     <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-0 xl:h-2">
       {/* Legion Chart */}
       <Card className="flex flex-col border-0 xl:h-2">
-        <CardContent className="flex flex-1 items-center pb-0">
+        <CardContent className="flex flex-1 items-center p-0">
           <ChartContainer
             config={chartConfig}
             className="mx-auto aspect-square w-full max-w-[200px]"
@@ -193,8 +193,7 @@ export function LegionRaidCharts({ legionLevel, raidPower, level, exp, expData }
 
       {/* Raid Power Chart */}
       <Card className="flex flex-col border-0 xl:h-2">
-
-        <CardContent className="flex flex-1 items-center pb-0">
+        <CardContent className="flex flex-1 items-center p-0">
           <ChartContainer
             config={chartConfig}
             className="mx-auto aspect-square w-full max-w-[200px]"
@@ -254,7 +253,7 @@ export function LegionRaidCharts({ legionLevel, raidPower, level, exp, expData }
 
       <Card className="flex flex-col border-0 xl:h-2">
 
-        <CardContent className="flex flex-1 items-center pb-0">
+        <CardContent className="flex flex-1 items-center p-0">
           <ChartContainer
             config={chartConfig}
             className="mx-auto aspect-square w-full max-w-[200px]"

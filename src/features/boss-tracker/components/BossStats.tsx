@@ -1,7 +1,7 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Calendar, Trophy, Sword } from 'lucide-react';
-import { RosterCharacter, BossInfo } from '@/types/bossTracker';
-import { getCompletionStats } from '@/utils/bossUtils';
+import { RosterCharacter, BossInfo } from '../types/bossTracker';
+import { getCompletionStats, getCharacterWorldMultiplier } from '../utils/bossUtils';
 
 interface BossStatsProps {
   roster: RosterCharacter[];
@@ -53,7 +53,8 @@ export const BossStats = ({
                     const isEnabled = enabledByCharacter[c.name]?.[b.name] ?? true;
                     const isChecked = progressByCharacter[c.name]?.[b.name] ?? false;
                     const party = partyByCharacter[c.name]?.[b.name] ?? 1;
-                    const share = Math.floor(b.value / party);
+                    const worldMultiplier = getCharacterWorldMultiplier(c);
+                    const share = Math.floor((b.value / party) * worldMultiplier);
                     return sum + (isEnabled && isChecked ? share : 0);
                   }, 0);
                   return acc + weeklyDailyMax + monthlyMax;
@@ -78,7 +79,8 @@ export const BossStats = ({
                     const isEnabled = enabledByCharacter[c.name]?.[b.name] ?? true;
                     const isChecked = progressByCharacter[c.name]?.[b.name] ?? false;
                     const party = partyByCharacter[c.name]?.[b.name] ?? 1;
-                    const share = Math.floor(b.value / party);
+                    const worldMultiplier = getCharacterWorldMultiplier(c);
+                    const share = Math.floor((b.value / party) * worldMultiplier);
                     return sum + (isEnabled && isChecked ? share : 0);
                   }, 0);
                   return acc + weeklyDailyMax + monthlyMax;

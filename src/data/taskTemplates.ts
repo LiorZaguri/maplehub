@@ -15,6 +15,7 @@ export const taskTemplates: TaskTemplate[] = [
   { name: 'Champion Double Up 3x Coin Checkin', category: 'Event', frequency: 'weekly' },
 
   // 2. Sacred Symbol Dailies
+  { name: 'Sacred Symbol Dailies', category: 'Sacred Symbol Dailies', frequency: 'daily' },
   { name: 'Cernium', category: 'Sacred Symbol Dailies', frequency: 'daily' },
   { name: 'Hotel Arcus', category: 'Sacred Symbol Dailies', frequency: 'daily' },
   { name: 'Odium', category: 'Sacred Symbol Dailies', frequency: 'daily' },
@@ -24,6 +25,7 @@ export const taskTemplates: TaskTemplate[] = [
   { name: 'Tallahart', category: 'Sacred Symbol Dailies', frequency: 'daily' },
 
   // 3. Arcane Symbol Dailies
+  { name: 'Arcane Symbol Dailies', category: 'Arcane Symbol Dailies', frequency: 'daily' },
   { name: 'Vanishing Journey', category: 'Arcane Symbol Dailies', frequency: 'daily' },
   { name: 'Chu Chu Island', category: 'Arcane Symbol Dailies', frequency: 'daily' },
   { name: 'Lachelin', category: 'Arcane Symbol Dailies', frequency: 'daily' },
@@ -40,7 +42,6 @@ export const taskTemplates: TaskTemplate[] = [
 
   // 5. Other Dailies
   { name: 'Monster Park', category: 'Other Dailies', frequency: 'daily' },
-  { name: 'Monster Park Extreme', category: 'Other Dailies', frequency: 'weekly' },
   { name: 'Commerci Voyages', category: 'Other Dailies', frequency: 'daily' },
   { name: 'Commerci Party Quest', category: 'Other Dailies', frequency: 'daily' },
   { name: 'Ursus', category: 'Other Dailies', frequency: 'daily' },
@@ -65,6 +66,7 @@ export const taskTemplates: TaskTemplate[] = [
   { name: 'Gollux', category: 'Daily Bosses', frequency: 'daily' },
 
   // 7. Arcane Symbol Weeklies
+  { name: 'Arcane Symbol Weeklies', category: 'Arcane Symbol Weeklies', frequency: 'weekly' },
   { name: 'Erda Spectrum', category: 'Arcane Symbol Weeklies', frequency: 'weekly' },
   { name: 'Hungry Muto', category: 'Arcane Symbol Weeklies', frequency: 'weekly' },
   { name: 'Midnight Chaser', category: 'Arcane Symbol Weeklies', frequency: 'weekly' },
@@ -87,6 +89,7 @@ export const taskTemplates: TaskTemplate[] = [
   { name: 'Mu Lung Dojo', category: 'Other Weeklies', frequency: 'weekly' },
   { name: 'Scrapyard Weeklies', category: 'Other Weeklies', frequency: 'weekly' },
   { name: 'Dark World Tree Weeklies', category: 'Other Weeklies', frequency: 'weekly' },
+  { name: 'Monster Park Extreme', category: 'Other Weeklies', frequency: 'weekly' },
 
   // 11. Threads of Fate
   { name: 'Reroll Threads of Fate Ask', category: 'Threads of Fate', frequency: 'daily' },

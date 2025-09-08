@@ -1,5 +1,6 @@
-import { BossProgressByCharacter, BossEnabledByCharacter, BossPartyByCharacter, BossInfo } from '@/types/bossTracker';
-import { getMostRecentResetTimestamp, getMostRecentMonthlyResetTimestamp } from '@/utils/bossUtils';
+import { BossProgressByCharacter, BossEnabledByCharacter, BossPartyByCharacter, BossInfo } from '../types/bossTracker';
+import { getMostRecentResetTimestamp, getMostRecentMonthlyResetTimestamp } from '../utils/bossUtils';
+import { createObjectStorage, createNumberStorage, createArrayStorage } from '@/utils/storageUtils';
 
 // Storage keys
 export const STORAGE_KEYS = {
@@ -13,166 +14,87 @@ export const STORAGE_KEYS = {
   CHARACTER_ORDER: 'maplehub_bosstracker_character_order',
 } as const;
 
+// Typed storage instances
+const bossProgressStorage = createObjectStorage<BossProgressByCharacter>(STORAGE_KEYS.BOSS_PROGRESS, {});
+const bossEnabledStorage = createObjectStorage<BossEnabledByCharacter>(STORAGE_KEYS.BOSS_ENABLED, {});
+const tempDisabledStorage = createObjectStorage<BossEnabledByCharacter>(STORAGE_KEYS.BOSS_TEMP_DISABLED, {});
+const bossPartyStorage = createObjectStorage<BossPartyByCharacter>(STORAGE_KEYS.BOSS_PARTY, {});
+const lastResetStorage = createNumberStorage(STORAGE_KEYS.LAST_RESET_TIMESTAMP, 0);
+const lastMonthlyResetStorage = createNumberStorage(STORAGE_KEYS.LAST_MONTHLY_RESET_TIMESTAMP, 0);
+const characterOrderStorage = createArrayStorage<string>(STORAGE_KEYS.CHARACTER_ORDER, []);
+
 /**
  * Load boss progress from localStorage
  */
-export const loadBossProgress = (): BossProgressByCharacter => {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEYS.BOSS_PROGRESS);
-    return stored ? (JSON.parse(stored) as BossProgressByCharacter) : {};
-  } catch {
-    return {};
-  }
-};
+export const loadBossProgress = (): BossProgressByCharacter => bossProgressStorage.load();
 
 /**
  * Save boss progress to localStorage
  */
-export const saveBossProgress = (progress: BossProgressByCharacter): void => {
-  try {
-    localStorage.setItem(STORAGE_KEYS.BOSS_PROGRESS, JSON.stringify(progress));
-  } catch {
-    // ignore
-  }
-};
+export const saveBossProgress = (progress: BossProgressByCharacter): void => bossProgressStorage.save(progress);
 
 /**
  * Load boss enabled state from localStorage
  */
-export const loadBossEnabled = (): BossEnabledByCharacter => {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEYS.BOSS_ENABLED);
-    return stored ? (JSON.parse(stored) as BossEnabledByCharacter) : {};
-  } catch {
-    return {};
-  }
-};
+export const loadBossEnabled = (): BossEnabledByCharacter => bossEnabledStorage.load();
 
 /**
  * Save boss enabled state to localStorage
  */
-export const saveBossEnabled = (enabled: BossEnabledByCharacter): void => {
-  try {
-    localStorage.setItem(STORAGE_KEYS.BOSS_ENABLED, JSON.stringify(enabled));
-  } catch {
-    // ignore
-  }
-};
+export const saveBossEnabled = (enabled: BossEnabledByCharacter): void => bossEnabledStorage.save(enabled);
 
 /**
  * Load temporary disabled bosses from localStorage
  */
-export const loadTempDisabledBosses = (): BossEnabledByCharacter => {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEYS.BOSS_TEMP_DISABLED);
-    return stored ? (JSON.parse(stored) as BossEnabledByCharacter) : {};
-  } catch {
-    return {};
-  }
-};
+export const loadTempDisabledBosses = (): BossEnabledByCharacter => tempDisabledStorage.load();
 
 /**
  * Save temporary disabled bosses to localStorage
  */
-export const saveTempDisabledBosses = (tempDisabled: BossEnabledByCharacter): void => {
-  try {
-    localStorage.setItem(STORAGE_KEYS.BOSS_TEMP_DISABLED, JSON.stringify(tempDisabled));
-  } catch {
-    // ignore
-  }
-};
+export const saveTempDisabledBosses = (tempDisabled: BossEnabledByCharacter): void => tempDisabledStorage.save(tempDisabled);
 
 /**
  * Load party sizes from localStorage
  */
-export const loadBossParty = (): BossPartyByCharacter => {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEYS.BOSS_PARTY);
-    return stored ? (JSON.parse(stored) as BossPartyByCharacter) : {};
-  } catch {
-    return {};
-  }
-};
+export const loadBossParty = (): BossPartyByCharacter => bossPartyStorage.load();
 
 /**
  * Save party sizes to localStorage
  */
-export const saveBossParty = (party: BossPartyByCharacter): void => {
-  try {
-    localStorage.setItem(STORAGE_KEYS.BOSS_PARTY, JSON.stringify(party));
-  } catch {
-    // ignore
-  }
-};
+export const saveBossParty = (party: BossPartyByCharacter): void => bossPartyStorage.save(party);
 
 /**
  * Load last reset timestamp from localStorage
  */
-export const loadLastResetTimestamp = (): number => {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEYS.LAST_RESET_TIMESTAMP);
-    return stored ? parseInt(stored) : 0;
-  } catch {
-    return 0;
-  }
-};
+export const loadLastResetTimestamp = (): number => lastResetStorage.load();
 
 /**
  * Save last reset timestamp to localStorage
  */
-export const saveLastResetTimestamp = (timestamp: number): void => {
-  try {
-    localStorage.setItem(STORAGE_KEYS.LAST_RESET_TIMESTAMP, timestamp.toString());
-  } catch {
-    // ignore
-  }
-};
+export const saveLastResetTimestamp = (timestamp: number): void => lastResetStorage.save(timestamp);
 
 /**
  * Load last monthly reset timestamp from localStorage
  */
-export const loadLastMonthlyResetTimestamp = (): number => {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEYS.LAST_MONTHLY_RESET_TIMESTAMP);
-    return stored ? parseInt(stored) : 0;
-  } catch {
-    return 0;
-  }
-};
+export const loadLastMonthlyResetTimestamp = (): number => lastMonthlyResetStorage.load();
 
 /**
  * Save last monthly reset timestamp to localStorage
  */
-export const saveLastMonthlyResetTimestamp = (timestamp: number): void => {
-  try {
-    localStorage.setItem(STORAGE_KEYS.LAST_MONTHLY_RESET_TIMESTAMP, timestamp.toString());
-  } catch {
-    // ignore
-  }
-};
+export const saveLastMonthlyResetTimestamp = (timestamp: number): void => lastMonthlyResetStorage.save(timestamp);
 
 /**
  * Load character order from localStorage
  */
 export const loadCharacterOrder = (): string[] | null => {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEYS.CHARACTER_ORDER);
-    return stored ? JSON.parse(stored) : null;
-  } catch {
-    return null;
-  }
+  const order = characterOrderStorage.load();
+  return order.length > 0 ? order : null;
 };
 
 /**
  * Save character order to localStorage
  */
-export const saveCharacterOrder = (order: string[]): void => {
-  try {
-    localStorage.setItem(STORAGE_KEYS.CHARACTER_ORDER, JSON.stringify(order));
-  } catch {
-    // ignore
-  }
-};
+export const saveCharacterOrder = (order: string[]): void => characterOrderStorage.save(order);
 
 /**
  * Perform weekly auto-reset

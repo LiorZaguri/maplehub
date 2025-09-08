@@ -4,17 +4,11 @@ import { Badge } from '@/components/ui/badge';
 import { Clock, Calendar, Star, Coins } from 'lucide-react';
 import { useTimeCalculations } from '@/hooks/useTimeCalculations';
 import { formatMesos } from '@/lib/sharedUtils';
+import { Character, TaskStats } from '../types/taskTracker';
 
 interface TaskStatsProps {
-  stats: {
-    total: number;
-    completed: number;
-    dailyCompleted: number;
-    dailyTotal: number;
-    weeklyCompleted: number;
-    weeklyTotal: number;
-  };
-  characters: Array<{ name: string }>;
+  stats: TaskStats;
+  characters: Character[];
 }
 
 const TaskStats: React.FC<TaskStatsProps> = ({ stats, characters }) => {

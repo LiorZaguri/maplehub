@@ -1,13 +1,16 @@
+
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import Layout from '@/components/Layout';
 
-import TaskStats from '@/components/features/task-tracker/TaskStats';
-import TaskFilters from '@/components/features/task-tracker/TaskFilters';
-import CharacterTaskGrid from '@/components/features/task-tracker/CharacterTaskGrid';
-import TaskSelectorDialog from '@/components/features/task-tracker/TaskSelectorDialog';
+import {
+  TaskStats,
+  TaskFilters,
+  CharacterTaskGrid,
+  TaskSelectorDialog,
+  useTaskTracker
+} from '@/features/task-tracker';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
-import { useTaskTracker } from '@/hooks/useTaskTracker';
 import { taskTemplates } from '@/data/taskTemplates';
 
 import { RotateCcw, Star } from 'lucide-react';
@@ -43,7 +46,7 @@ const TaskTracker = () => {
     toggleSectionCollapse,
     isSectionCollapsed,
     handleReorderCharacters,
-    saveCharacterOrder,
+    saveCharacterOrderToStorage,
     setHiddenCharacters,
     setExpandedTaskLists,
     setEnabledTasksByCharacter,
@@ -341,7 +344,7 @@ const TaskTracker = () => {
               </Button>
               <Button
                 onClick={() => {
-                  saveCharacterOrder();
+                  saveCharacterOrderToStorage();
                   setShowReorderDialog(false);
                   setReorderCharacters([]);
                 }}

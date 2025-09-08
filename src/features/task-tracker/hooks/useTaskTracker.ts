@@ -8,16 +8,32 @@ import {
   CollapsedSections,
   EnabledTasks,
   TaskPresets
-} from '@/types/taskTracker';
-import { STORAGE_KEYS, DEFAULTS, UI_CONSTANTS } from '@/constants/taskTracker';
+} from '../types/taskTracker';
+import { STORAGE_KEYS, DEFAULTS, UI_CONSTANTS } from '../constants/taskTracker';
 import { taskTemplates } from '@/data/taskTemplates';
 import {
   getTaskStats,
   getFilteredCharacters,
   applyTaskPresets,
   validateTask
-} from '@/utils/taskUtils';
+} from '../utils/taskUtils';
 import { formatTimeRemaining } from '@/utils/timeUtils';
+import {
+  loadTasks,
+  saveTasks,
+  loadEnabledTasks,
+  saveEnabledTasks,
+  loadTaskPresets,
+  saveTaskPresets,
+  loadCollapsedSections,
+  saveCollapsedSections,
+  loadHiddenCharacters,
+  saveHiddenCharacters,
+  loadExpandedTaskLists,
+  saveExpandedTaskLists,
+  loadCharacterOrder,
+  saveCharacterOrder
+} from '../services/taskTrackerService';
 
 export function useTaskTracker() {
   const { toast } = useToast();
@@ -52,50 +68,11 @@ export function useTaskTracker() {
   const [isLoadingOrder, setIsLoadingOrder] = useState(true);
 
   // Task management state
-  const [enabledTasksByCharacter, setEnabledTasksByCharacter] = useState<EnabledTasks>(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEYS.ENABLED_TASKS);
-      return stored ? (JSON.parse(stored) as EnabledTasks) : {};
-    } catch {
-      return {};
-    }
-  });
-
-  const [taskPresets, setTaskPresets] = useState<TaskPresets>(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEYS.TASK_PRESETS);
-      return stored ? (JSON.parse(stored) as TaskPresets) : {};
-    } catch {
-      return {};
-    }
-  });
-
-  const [collapsedSections, setCollapsedSections] = useState<CollapsedSections>(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEYS.COLLAPSED_SECTIONS);
-      return stored ? (JSON.parse(stored) as CollapsedSections) : {};
-    } catch {
-      return {};
-    }
-  });
-
-  const [hiddenCharacters, setHiddenCharacters] = useState<Set<string>>(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEYS.HIDDEN_CHARACTERS);
-      return stored ? new Set(JSON.parse(stored)) : new Set();
-    } catch {
-      return new Set();
-    }
-  });
-
-  const [expandedTaskLists, setExpandedTaskLists] = useState<Set<string>>(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEYS.EXPANDED_TASK_LISTS);
-      return stored ? new Set(JSON.parse(stored)) : new Set();
-    } catch {
-      return new Set();
-    }
-  });
+  const [enabledTasksByCharacter, setEnabledTasksByCharacter] = useState<EnabledTasks>(() => loadEnabledTasks());
+  const [taskPresets, setTaskPresets] = useState<TaskPresets>(() => loadTaskPresets());
+  const [collapsedSections, setCollapsedSections] = useState<CollapsedSections>(() => loadCollapsedSections());
+  const [hiddenCharacters, setHiddenCharacters] = useState<Set<string>>(() => loadHiddenCharacters());
+  const [expandedTaskLists, setExpandedTaskLists] = useState<Set<string>>(() => loadExpandedTaskLists());
 
   // Computed values
   const stats = getTaskStats(tasks, hiddenCharacters);
@@ -113,13 +90,12 @@ export function useTaskTracker() {
         const parsedCharacters = JSON.parse(stored) as Character[];
 
         // Load saved character order for TaskTracker
-        const savedOrder = localStorage.getItem(STORAGE_KEYS.CHARACTER_ORDER);
+        const savedOrder = loadCharacterOrder();
         if (savedOrder) {
-          const orderIds = JSON.parse(savedOrder) as string[];
-          const orderedCharacters = orderIds
+          const orderedCharacters = savedOrder
             .map(id => parsedCharacters.find(c => c.id === id))
             .filter(Boolean) as Character[];
-          const newCharacters = parsedCharacters.filter(c => !orderIds.includes(c.id));
+          const newCharacters = parsedCharacters.filter(c => !savedOrder.includes(c.id));
           setCharacters([...orderedCharacters, ...newCharacters]);
         } else {
           const mainCharacter = parsedCharacters.find(c => c.isMain);
@@ -150,74 +126,55 @@ export function useTaskTracker() {
 
   useEffect(() => {
     try {
-      const stored = localStorage.getItem(STORAGE_KEYS.TASKS);
-      if (stored) {
-        const loadedTasks = JSON.parse(stored);
-        const validTasks = loadedTasks.filter((task: Task) =>
-          taskTemplates.some(template =>
-            template.name === task.name &&
-            template.category === task.category &&
-            template.frequency === task.frequency
-          )
-        );
+      const loadedTasks = loadTasks();
+      const validTasks = loadedTasks.filter((task: Task) =>
+        taskTemplates.some(template =>
+          template.name === task.name &&
+          template.category === task.category &&
+          template.frequency === task.frequency
+        )
+      );
 
-        if (validTasks.length !== loadedTasks.length) {
-          localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(validTasks));
-          toast({
-            title: "Tasks Cleaned Up",
-            description: `Removed ${loadedTasks.length - validTasks.length} invalid task(s)`,
-            className: "progress-complete",
-            duration: UI_CONSTANTS.TOAST_DURATION
-          });
-        }
-
-        setTasks(validTasks);
+      if (validTasks.length !== loadedTasks.length) {
+        saveTasks(validTasks);
+        toast({
+          title: "Tasks Cleaned Up",
+          description: `Removed ${loadedTasks.length - validTasks.length} invalid task(s)`,
+          className: "progress-complete",
+          duration: UI_CONSTANTS.TOAST_DURATION
+        });
       }
+
+      setTasks(validTasks);
     } catch (error) {
       console.error('Failed to load tasks:', error);
     }
-  }, []);
+  }, [toast]);
 
   // Persistence effects
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(tasks));
-    } catch (error) {
-      console.error('Failed to save tasks:', error);
-    }
+    saveTasks(tasks);
   }, [tasks]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.ENABLED_TASKS, JSON.stringify(enabledTasksByCharacter));
-    } catch (error) {
-      console.error('Failed to save enabled tasks:', error);
-    }
+    saveEnabledTasks(enabledTasksByCharacter);
   }, [enabledTasksByCharacter]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.COLLAPSED_SECTIONS, JSON.stringify(collapsedSections));
-    } catch (error) {
-      console.error('Failed to save collapsed sections:', error);
-    }
+    saveCollapsedSections(collapsedSections);
   }, [collapsedSections]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.HIDDEN_CHARACTERS, JSON.stringify([...hiddenCharacters]));
-    } catch (error) {
-      console.error('Failed to save hidden characters:', error);
-    }
+    saveHiddenCharacters(hiddenCharacters);
   }, [hiddenCharacters]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.EXPANDED_TASK_LISTS, JSON.stringify([...expandedTaskLists]));
-    } catch (error) {
-      console.error('Failed to save expanded task lists:', error);
-    }
+    saveExpandedTaskLists(expandedTaskLists);
   }, [expandedTaskLists]);
+
+  useEffect(() => {
+    saveTaskPresets(taskPresets);
+  }, [taskPresets]);
 
   // Task management functions
   const toggleTaskComplete = (taskId: string) => {
@@ -292,18 +249,15 @@ export function useTaskTracker() {
     setShowReorderDialog(true);
   };
 
-  const saveCharacterOrder = () => {
+  const saveCharacterOrderToStorage = () => {
     const characterOrder = reorderCharacters.map(c => c.id);
-    localStorage.setItem(STORAGE_KEYS.CHARACTER_ORDER, JSON.stringify(characterOrder));
+    saveCharacterOrder(characterOrder);
 
     const orderedCharacters = reorderCharacters.map(char => {
       const original = characters.find(c => c.id === char.id);
       return original || char;
     });
     setCharacters(orderedCharacters);
-
-    setShowReorderDialog(false);
-    setReorderCharacters([]);
 
     toast({
       title: "Order Updated",
@@ -351,7 +305,7 @@ export function useTaskTracker() {
     toggleSectionCollapse,
     isSectionCollapsed,
     handleReorderCharacters,
-    saveCharacterOrder,
+    saveCharacterOrderToStorage,
 
     // Character visibility
     setHiddenCharacters,
