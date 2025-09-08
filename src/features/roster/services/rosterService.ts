@@ -92,6 +92,25 @@ export const loadBossEnabled = (): Record<string, boolean> => bossEnabledStorage
 export const saveBossEnabled = (enabled: Record<string, boolean>): void => bossEnabledStorage.save(enabled);
 
 /**
+ * Load boss enabled settings for a specific character
+ */
+export const loadBossEnabledForCharacter = (characterName: string): Record<string, boolean> => {
+  const stored = localStorage.getItem(STORAGE_KEYS.BOSS_ENABLED);
+  const parsed = stored ? (JSON.parse(stored) as Record<string, Record<string, boolean>>) : {};
+  return parsed[characterName] || {};
+};
+
+/**
+ * Save boss enabled settings for a specific character
+ */
+export const saveBossEnabledForCharacter = (characterName: string, enabled: Record<string, boolean>): void => {
+  const stored = localStorage.getItem(STORAGE_KEYS.BOSS_ENABLED);
+  const parsed = stored ? (JSON.parse(stored) as Record<string, Record<string, boolean>>) : {};
+  parsed[characterName] = enabled;
+  localStorage.setItem(STORAGE_KEYS.BOSS_ENABLED, JSON.stringify(parsed));
+};
+
+/**
  * Load boss party sizes from localStorage
  */
 export const loadBossPartySizes = (): Record<string, number> => bossPartySizesStorage.load();
@@ -100,6 +119,25 @@ export const loadBossPartySizes = (): Record<string, number> => bossPartySizesSt
  * Save boss party sizes to localStorage
  */
 export const saveBossPartySizes = (sizes: Record<string, number>): void => bossPartySizesStorage.save(sizes);
+
+/**
+ * Load boss party sizes for a specific character
+ */
+export const loadBossPartySizesForCharacter = (characterName: string): Record<string, number> => {
+  const stored = localStorage.getItem(STORAGE_KEYS.BOSS_PARTY_SIZES);
+  const parsed = stored ? (JSON.parse(stored) as Record<string, Record<string, number>>) : {};
+  return parsed[characterName] || {};
+};
+
+/**
+ * Save boss party sizes for a specific character
+ */
+export const saveBossPartySizesForCharacter = (characterName: string, sizes: Record<string, number>): void => {
+  const stored = localStorage.getItem(STORAGE_KEYS.BOSS_PARTY_SIZES);
+  const parsed = stored ? (JSON.parse(stored) as Record<string, Record<string, number>>) : {};
+  parsed[characterName] = sizes;
+  localStorage.setItem(STORAGE_KEYS.BOSS_PARTY_SIZES, JSON.stringify(parsed));
+};
 
 /**
  * Load boss variants from localStorage
@@ -112,6 +150,25 @@ export const loadBossVariants = (): Record<string, string> => bossVariantsStorag
 export const saveBossVariants = (variants: Record<string, string>): void => bossVariantsStorage.save(variants);
 
 /**
+ * Load boss variants for a specific character
+ */
+export const loadBossVariantsForCharacter = (characterName: string): Record<string, string> => {
+  const stored = localStorage.getItem(STORAGE_KEYS.BOSS_VARIANTS);
+  const parsed = stored ? (JSON.parse(stored) as Record<string, Record<string, string>>) : {};
+  return parsed[characterName] || {};
+};
+
+/**
+ * Save boss variants for a specific character
+ */
+export const saveBossVariantsForCharacter = (characterName: string, variants: Record<string, string>): void => {
+  const stored = localStorage.getItem(STORAGE_KEYS.BOSS_VARIANTS);
+  const parsed = stored ? (JSON.parse(stored) as Record<string, Record<string, string>>) : {};
+  parsed[characterName] = variants;
+  localStorage.setItem(STORAGE_KEYS.BOSS_VARIANTS, JSON.stringify(parsed));
+};
+
+/**
  * Load boss base enabled settings from localStorage
  */
 export const loadBossBaseEnabled = (): Record<string, boolean> => bossBaseEnabledStorage.load();
@@ -120,6 +177,25 @@ export const loadBossBaseEnabled = (): Record<string, boolean> => bossBaseEnable
  * Save boss base enabled settings to localStorage
  */
 export const saveBossBaseEnabled = (enabled: Record<string, boolean>): void => bossBaseEnabledStorage.save(enabled);
+
+/**
+ * Load boss base enabled settings for a specific character
+ */
+export const loadBossBaseEnabledForCharacter = (characterName: string): Record<string, boolean> => {
+  const stored = localStorage.getItem(STORAGE_KEYS.BOSS_BASE_ENABLED);
+  const parsed = stored ? (JSON.parse(stored) as Record<string, Record<string, boolean>>) : {};
+  return parsed[characterName] || {};
+};
+
+/**
+ * Save boss base enabled settings for a specific character
+ */
+export const saveBossBaseEnabledForCharacter = (characterName: string, enabled: Record<string, boolean>): void => {
+  const stored = localStorage.getItem(STORAGE_KEYS.BOSS_BASE_ENABLED);
+  const parsed = stored ? (JSON.parse(stored) as Record<string, Record<string, boolean>>) : {};
+  parsed[characterName] = enabled;
+  localStorage.setItem(STORAGE_KEYS.BOSS_BASE_ENABLED, JSON.stringify(parsed));
+};
 
 /**
  * Get characters ordered by saved order preference

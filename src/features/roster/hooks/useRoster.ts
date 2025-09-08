@@ -428,8 +428,8 @@ export const useRoster = () => {
       // Clear input after adding
       setBulkNamesInput('');
 
-      // If we have multiple characters and at least one succeeded, open boss dialog
-      if (names.length > 1 && successfullyAdded.length > 0) {
+      // If we have at least one successfully added character, open boss dialog
+      if (successfullyAdded.length > 0) {
         setPendingBulkNames(successfullyAdded);
         // Set characterName to the first successfully added character for display purposes
         setPendingCharacterName(successfullyAdded[0]);
