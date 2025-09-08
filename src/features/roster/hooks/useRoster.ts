@@ -107,6 +107,14 @@ export const useRoster = () => {
     setSearchParams(next, { replace: true });
   }, [searchParams, characters, setSearchParams]);
 
+  // Clear pending states when boss dialog closes
+  useEffect(() => {
+    if (!isBossDialogOpen) {
+      setPendingCharacterName(null);
+      setPendingBulkNames(null);
+    }
+  }, [isBossDialogOpen]);
+
   // Save state changes to localStorage
   useEffect(() => {
     saveBossEnabled(selectedBossEnabled);
@@ -317,27 +325,120 @@ export const useRoster = () => {
 
   const handleBulkAdd = async () => {
     if (!bulkNamesInput.trim()) return;
-    
+
     const names = bulkNamesInput
       .split(/[,\s]+/)
       .map(name => name.trim())
       .filter(name => name.length > 0);
-    
+
     if (names.length === 0) return;
 
-    if (names.length > 1) {
-      // Show boss dialog for bulk add
-      setPendingBulkNames(names);
-      setIsBossDialogOpen(true);
-      return;
+    setIsLoading(true);
+
+    try {
+      // Add all characters to roster first (works like single character addition)
+      const successfullyAdded: string[] = [];
+      const addedCharacters: Character[] = [];
+
+    // Fetch all character data first
+    const characterPromises = names.map(async (name) => {
+      try {
+        const { data, error } = await supabase.functions.invoke('nexon-character-lookup', {
+          body: { characterName: name, region: characterRegion }
+        });
+
+        if (error) {
+          throw new Error(error.message || 'Failed to fetch character data');
+        }
+
+        if (!data || !data.name) {
+          throw new Error('Character not found');
+        }
+
+        const character = data;
+        const newCharacter: Character = {
+          id: globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+          name: character.name,
+          class: character.additionalData?.class || 'Unknown',
+          level: character.level,
+          exp: character.exp || 0,
+          reboot: character.worldName?.includes('Reboot') || false,
+          lastUpdated: new Date().toISOString(),
+          avatarUrl: character.characterImgURL || '/placeholder.svg',
+          isMain: character.isMain || false,
+          legionLevel: character.legionLevel,
+          raidPower: character.raidPower,
+          region: character.region,
+          worldName: character.worldName,
+          additionalData: character.additionalData,
+        };
+
+        return { name, character: newCharacter, success: true };
+      } catch (error) {
+        console.error(`Failed to add character ${name}:`, error);
+        return { name, character: null, success: false, error };
+      }
+    });
+
+    // Wait for all fetches to complete
+    const results = await Promise.all(characterPromises);
+
+    // Process results and add to roster
+    for (const result of results) {
+      if (result.success && result.character) {
+        // Check for duplicates
+        const exists = characters.some(c =>
+          c.name.toLowerCase() === result.character!.name.toLowerCase()
+        );
+
+        if (!exists) {
+          successfullyAdded.push(result.name);
+          addedCharacters.push(result.character);
+        }
+      }
     }
 
-    // Single character - add directly
-    try {
-      await addCharacter(names[0], characterRegion);
+    // Update state with all new characters at once
+    if (addedCharacters.length > 0) {
+      const updatedCharacters = [...characters, ...addedCharacters];
+      setCharacters(updatedCharacters);
+      saveCharacters(updatedCharacters);
+
+      // Show single success toast for bulk addition
+      if (addedCharacters.length === 1) {
+        // Single character - show individual toast
+        const char = addedCharacters[0];
+        toast({
+          title: "Character Added",
+          description: `${char.name} (Lv. ${char.level} ${char.class}) has been added to your roster`,
+          className: "progress-complete",
+          duration: 4000
+        });
+      } else {
+        // Multiple characters - show summary toast
+        toast({
+          title: "Characters Added",
+          description: `${addedCharacters.length} characters have been added to your roster`,
+          className: "progress-complete",
+          duration: 4000
+        });
+      }
+    }
+
+      // Clear input after adding
       setBulkNamesInput('');
-    } catch {
-      // Error already handled in addCharacter
+
+      // If we have multiple characters and at least one succeeded, open boss dialog
+      if (names.length > 1 && successfullyAdded.length > 0) {
+        setPendingBulkNames(successfullyAdded);
+        // Set characterName to the first successfully added character for display purposes
+        setPendingCharacterName(successfullyAdded[0]);
+        setIsBossDialogOpen(true);
+      }
+    } catch (error) {
+      console.error('Error during bulk add:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 

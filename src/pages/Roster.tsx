@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import Layout from '@/components/Layout';
 import {
   AddCharacterForm,
   BossEditorDialog,
@@ -28,6 +29,7 @@ const Roster = () => {
     characterRegion,
     isBossDialogOpen,
     pendingCharacterName,
+    pendingBulkNames,
 
     // Actions
     setBulkNamesInput,
@@ -43,37 +45,16 @@ const Roster = () => {
     refreshAllCharacters,
     handleBulkAdd,
     selectCharacterForExpGraph,
+    addCharacter,
   } = useRoster();
 
   const handleEditBosses = (characterName: string) => {
     setPendingCharacterName(characterName);
+    // Clear bulk names when opening single character editor
+    // This will be handled by useRoster hook
     setIsBossDialogOpen(true);
   };
 
-  const handleSaveBossConfiguration = (characterName: string, config: any) => {
-    // Save boss configuration to localStorage
-    try {
-      // Save enabled bosses
-      const enabledKey = 'maplehub_boss_enabled';
-      const enabledStored = localStorage.getItem(enabledKey);
-      const enabledData = enabledStored ? JSON.parse(enabledStored) : {};
-      enabledData[characterName] = config.enabled;
-      localStorage.setItem(enabledKey, JSON.stringify(enabledData));
-
-      // Save party sizes
-      const partyKey = 'maplehub_boss_party';
-      const partyStored = localStorage.getItem(partyKey);
-      const partyData = partyStored ? JSON.parse(partyStored) : {};
-      partyData[characterName] = config.partySizes;
-      localStorage.setItem(partyKey, JSON.stringify(partyData));
-
-      // Close dialog
-      setIsBossDialogOpen(false);
-      setPendingCharacterName(null);
-    } catch (error) {
-      console.error('Failed to save boss configuration:', error);
-    }
-  };
 
   const handleToast = (options: { title: string; description: string; variant?: string }) => {
     // This will be handled by the useToast hook in useRoster
@@ -81,7 +62,8 @@ const Roster = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <Layout>
+      <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -160,10 +142,11 @@ const Roster = () => {
         open={isBossDialogOpen}
         onOpenChange={setIsBossDialogOpen}
         characterName={pendingCharacterName}
+        pendingBulkNames={pendingBulkNames}
         characters={characters}
-        onSave={handleSaveBossConfiguration}
       />
-    </div>
+      </div>
+    </Layout>
   );
 };
 

@@ -1,12 +1,7 @@
-import Layout from '@/components/Layout';
 import Roster from './Roster';
 
 const Index = () => {
-  return (
-    <Layout>
-      <Roster />
-    </Layout>
-  );
+  return <Roster />;
 };
 
 export default Index;

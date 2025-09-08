@@ -12,13 +12,13 @@ import { getCharacterWorldMultiplier } from '@/features/boss-tracker/utils/bossU
 import { useToast } from '@/hooks/use-toast';
 import { Character } from '../types/roster';
 
-interface BossEditorDialogProps {
+export interface BossEditorDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   characterName: string | null;
   pendingBulkNames: string[] | null;
   characters: Character[];
-  onSave: (characterName: string, config: BossConfiguration) => void;
+  onSave?: (characterName: string, config: BossConfiguration) => void;
 }
 
 interface BossConfiguration {
@@ -502,7 +502,34 @@ const BossEditorDialog: React.FC<BossEditorDialogProps> = ({
   useEffect(() => {
     if (open && characterName) {
       try {
-        // Load stored enables and party sizes
+        // For bulk operations, start with defaults instead of loading existing config
+        if (pendingBulkNames && pendingBulkNames.length > 1) {
+          // Use defaults for bulk operations
+          const defaults: Record<string, boolean> = {};
+          const parties: Record<string, number> = {};
+          const selectedByBase: Record<string, string> = {};
+          const enabledByBase: Record<string, boolean> = {};
+          listAllBosses().forEach(b => {
+            defaults[b.name] = b.defaultEnabled;
+            parties[b.name] = 1;
+          });
+          ([['daily', groupedDaily], ['weekly', groupedWeekly], ['monthly', groupedMonthly]] as const).forEach(([cat, data]) => {
+            data.forEach(([base, variants]) => {
+              const key = makeGroupKey(cat, base);
+              const preferred = variants.find(v => defaults[v.name]);
+              const pick = preferred?.name || variants[0]?.name;
+              if (pick) selectedByBase[key] = pick;
+              enabledByBase[key] = preferred ? true : false;
+            });
+          });
+          setSelectedBossEnabled(defaults);
+          setPartySizes(parties);
+          setSelectedVariantByBase(selectedByBase);
+          setBaseEnabledByBase(enabledByBase);
+          return;
+        }
+
+        // Load stored enables and party sizes for single character
         const enabledKey = 'maplehub_boss_enabled';
         const partyKey = 'maplehub_boss_party';
         const enabledStored = localStorage.getItem(enabledKey);
@@ -561,7 +588,7 @@ const BossEditorDialog: React.FC<BossEditorDialogProps> = ({
         setBaseEnabledByBase(enabledByBase);
       }
     }
-  }, [open, characterName]); // Removed groupedDaily, groupedWeekly, groupedMonthly from dependencies
+  }, [open, characterName, pendingBulkNames]); // Removed groupedDaily, groupedWeekly, groupedMonthly from dependencies
 
   const handleSave = () => {
     if (!characterName) return;
@@ -620,7 +647,7 @@ const BossEditorDialog: React.FC<BossEditorDialogProps> = ({
             <DialogTitle>
               {pendingBulkNames && pendingBulkNames.length > 1
                 ? `Choose bosses for ${pendingBulkNames.length} characters`
-                : `Choose bosses for ${characterName}`}
+                : `Choose bosses for ${characterName || 'character'}`}
             </DialogTitle>
             <DialogDescription className="hidden sm:block">
               Select bosses and configure party sizes for this character. Monthly bosses have no restrictions, while weekly bosses are limited to 14 total.
