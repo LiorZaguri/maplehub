@@ -38,7 +38,11 @@ const Navigation = () => {
     { name: 'Liberation Calculator', path: '/liberation-calculator', icon: Calculator },
   ], []);
 
-  const [toolsExpanded, setToolsExpanded] = useState(false);
+  const [toolsExpanded, setToolsExpanded] = useState(() => {
+    // Load saved state from localStorage on initialization
+    const saved = localStorage.getItem('navigation-tools-expanded');
+    return saved ? JSON.parse(saved) : false;
+  });
 
   // Auto-expand Tools section if a tool page is active
   const isToolActive = toolItems.some(item => location.pathname === item.path);
@@ -47,6 +51,11 @@ const Navigation = () => {
       setToolsExpanded(true);
     }
   }, [isToolActive]);
+
+  // Save tools expansion state to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('navigation-tools-expanded', JSON.stringify(toolsExpanded));
+  }, [toolsExpanded]);
 
   const NavContent = useMemo(() => (
     <div className="flex flex-col h-full">

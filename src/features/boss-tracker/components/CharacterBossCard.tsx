@@ -127,7 +127,7 @@ export const CharacterBossCard = ({
                                 <img
                                   src={meta.imageUrl}
                                   alt={boss.name}
-                                  className={`h-5 w-5 rounded-sm ${isDisabled ? 'grayscale' : ''}`}
+                                  className={`h-6 w-6 rounded-md ${isDisabled ? 'grayscale' : ''}`}
                                   loading="lazy"
                                   referrerPolicy="no-referrer"
                                   onError={(e) => {
@@ -228,7 +228,7 @@ export const CharacterBossCard = ({
                             <img
                               src={meta.imageUrl}
                               alt={boss.name}
-                              className={`h-4 w-4 rounded-sm flex-shrink-0 ${isDisabled ? 'grayscale' : ''}`}
+                              className={`h-6 w-6 rounded-md flex-shrink-0 ${isDisabled ? 'grayscale' : ''}`}
                               loading="lazy"
                               referrerPolicy="no-referrer"
                               onError={(e) => {
