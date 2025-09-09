@@ -1,7 +1,13 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   Users,
   Sword,
@@ -9,7 +15,11 @@ import {
   TrendingUp,
   Server,
   CheckSquare,
-  Coffee
+  Coffee,
+  Calculator,
+  Wrench,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { ServerStatusIndicator } from './ServerStatusIndicator';
 
@@ -24,7 +34,30 @@ const Navigation = () => {
     { name: 'Server Status', path: '/server-status', icon: Server },
   ], []);
 
-  const NavContent = useMemo(() => () => (
+  const toolItems = useMemo(() => [
+    { name: 'Liberation Calculator', path: '/liberation-calculator', icon: Calculator },
+  ], []);
+
+  const [toolsExpanded, setToolsExpanded] = useState(() => {
+    // Load saved state from localStorage on initialization
+    const saved = localStorage.getItem('navigation-tools-expanded');
+    return saved ? JSON.parse(saved) : false;
+  });
+
+  // Auto-expand Tools section if a tool page is active
+  const isToolActive = toolItems.some(item => location.pathname === item.path);
+  useEffect(() => {
+    if (isToolActive) {
+      setToolsExpanded(true);
+    }
+  }, [isToolActive]);
+
+  // Save tools expansion state to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('navigation-tools-expanded', JSON.stringify(toolsExpanded));
+  }, [toolsExpanded]);
+
+  const NavContent = useMemo(() => (
     <div className="flex flex-col h-full">
       <div className="px-4 py-2 mb-4">
         <div className="flex items-center space-x-2">
@@ -36,7 +69,83 @@ const Navigation = () => {
       </div>
 
       <div className="flex-1 space-y-2 pb-4">
-        {navItems.map((item) => {
+        {/* Render first 3 items (Roster, Boss Tracker, Daily Tracker) */}
+        {navItems.slice(0, 3).map((item) => {
+          const Icon = item.icon;
+          const isActive = location.pathname === item.path;
+
+          return (
+            <Link
+              key={item.path}
+              to={item.path}
+              className="mx-2"
+              onClick={() => setIsOpen(false)}
+            >
+              <Button
+                variant={isActive ? "default" : "ghost"}
+                className={`w-full justify-start space-x-2 ${
+                  isActive
+                    ? 'btn-hero shadow-[var(--shadow-button)]'
+                    : 'hover:bg-card hover:text-primary'
+                  }`}
+              >
+                <Icon className="h-4 w-4" />
+                <span>{item.name}</span>
+              </Button>
+            </Link>
+          );
+        })}
+
+        {/* Tools Expandable Section */}
+        <div>
+          <Button
+            variant="ghost"
+            className="w-full justify-start space-x-2 hover:bg-card hover:text-primary mx-2"
+            onClick={() => setToolsExpanded(!toolsExpanded)}
+          >
+            <Wrench className="h-4 w-4" />
+            <span>Tools</span>
+            {toolsExpanded ? (
+              <ChevronUp className="h-4 w-4 ml-auto" />
+            ) : (
+              <ChevronDown className="h-4 w-4 ml-auto" />
+            )}
+          </Button>
+
+          {toolsExpanded && (
+            <div className="space-y-1 ml-2">
+                {toolItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = location.pathname === item.path;
+
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className="block"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <Button
+                      variant={isActive ? "default" : "ghost"}
+                      className={`w-full justify-start space-x-2 ml-4 ${
+                        isActive
+                          ? 'btn-hero shadow-[var(--shadow-button)]'
+                          : 'hover:bg-card hover:text-primary'
+                      }`}
+                      size="sm"
+                    >
+                      <Icon className="h-3 w-3" />
+                      <span className="text-sm">{item.name}</span>
+                    </Button>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Render remaining items (Server Status) */}
+        {navItems.slice(3).map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname === item.path;
 
@@ -79,15 +188,15 @@ const Navigation = () => {
             Buy me a coffee
           </Button>
         </a>
-      </div>
+        </div>
     </div>
-  ), [navItems, location.pathname, setIsOpen]);
+  ), [navItems, location.pathname, setIsOpen, toolsExpanded]);
 
   return (
     <>
       {/* Desktop Navigation */}
       <nav className="hidden xl:block w-64 min-h-screen card-gaming fixed left-0 top-0 z-40">
-        <NavContent />
+        {NavContent}
       </nav>
 
       {/* Mobile Navigation */}
@@ -120,7 +229,83 @@ const Navigation = () => {
                 </div>
 
                 <div className="flex-1 space-y-2 pb-4">
-                  {navItems.map((item) => {
+                  {/* Render first 3 items (Roster, Boss Tracker, Daily Tracker) */}
+                  {navItems.slice(0, 3).map((item) => {
+                    const Icon = item.icon;
+                    const isActive = location.pathname === item.path;
+
+                    return (
+                      <Link
+                        key={item.path}
+                        to={item.path}
+                        className="mx-2"
+                        onClick={() => setIsOpen(false)}
+                      >
+                        <Button
+                          variant={isActive ? "default" : "ghost"}
+                          className={`w-full justify-start space-x-2 ${
+                            isActive
+                              ? 'btn-hero shadow-[var(--shadow-button)]'
+                              : 'hover:bg-card hover:text-primary'
+                          }`}
+                        >
+                          <Icon className="h-4 w-4" />
+                          <span>{item.name}</span>
+                        </Button>
+                      </Link>
+                    );
+                  })}
+
+                  {/* Mobile Tools Expandable Section */}
+                  <div>
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start space-x-2 hover:bg-card hover:text-primary mx-2"
+                      onClick={() => setToolsExpanded(!toolsExpanded)}
+                    >
+                      <Wrench className="h-4 w-4" />
+                      <span>Tools</span>
+                      {toolsExpanded ? (
+                        <ChevronUp className="h-4 w-4 ml-auto" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4 ml-auto" />
+                      )}
+                    </Button>
+
+                    {toolsExpanded && (
+                      <div className="space-y-1 ml-2">
+                          {toolItems.map((item) => {
+                          const Icon = item.icon;
+                          const isActive = location.pathname === item.path;
+
+                          return (
+                            <Link
+                              key={item.path}
+                              to={item.path}
+                              className="block"
+                              onClick={() => setIsOpen(false)}
+                            >
+                              <Button
+                                variant={isActive ? "default" : "ghost"}
+                                className={`w-full justify-start space-x-2 ml-4 ${
+                                  isActive
+                                    ? 'btn-hero shadow-[var(--shadow-button)]'
+                                    : 'hover:bg-card hover:text-primary'
+                                }`}
+                                size="sm"
+                              >
+                                <Icon className="h-3 w-3" />
+                                <span className="text-sm">{item.name}</span>
+                              </Button>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Render remaining items (Server Status) */}
+                  {navItems.slice(3).map((item) => {
                     const Icon = item.icon;
                     const isActive = location.pathname === item.path;
 

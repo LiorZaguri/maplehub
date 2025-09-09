@@ -15,6 +15,7 @@ const TaskTracker = lazy(() => import("./pages/TaskTracker"));
 const VITracker = lazy(() => import("./pages/VITracker"));
 const Mules = lazy(() => import("./pages/Mules"));
 const ServerStatus = lazy(() => import("./pages/ServerStatus"));
+const LiberationCalculator = lazy(() => import("./pages/LiberationCalculator"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Loading component
@@ -52,6 +53,7 @@ const App = () => (
             <Route path="/vi-tracker" element={<VITracker />} />
             <Route path="/mules" element={<Mules />} />
             <Route path="/server-status" element={<ServerStatus />} />
+            <Route path="/liberation-calculator" element={<LiberationCalculator />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
