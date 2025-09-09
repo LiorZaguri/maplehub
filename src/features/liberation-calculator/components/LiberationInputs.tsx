@@ -5,6 +5,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
+import { getBossMeta } from '@/lib/bossData';
+import { getAssetUrl } from '@/lib/utils';
 import {
   LIBERATION_LABELS,
   GENESIS_PASS_OPTIONS,
@@ -30,19 +32,27 @@ export const LiberationInputs = ({ inputs, onUpdate, onBossUpdate, onReset }: Li
     // Extract boss name from quest value (format: "traces|Boss Name")
     const bossName = questValue.split('|')[1];
     
-    // Map boss names to their image files
-    const bossImageMap: Record<string, string> = {
-      'Von Leon': 'bosses/von-leon.png',
-      'Arkarium': 'bosses/arkarium.png',
-      'Magnus': 'bosses/magnus.png',
-      'Lotus': 'bosses/lotus.png',
-      'Damien': 'bosses/damien.png', 
-      'Will': 'bosses/will.png',
-      'Lucid': 'bosses/lucid.png',
-      'Verus Hilla': 'bosses/verus-hilla.png',
+    // Map simple boss names to their "Normal" difficulty versions for image lookup
+    const bossNameMap: Record<string, string> = {
+      'Lotus': 'Normal Lotus',
+      'Damien': 'Normal Damien',
+      'Lucid': 'Normal Lucid',
+      'Will': 'Normal Will',
+      'Gloom': 'Normal Gloom',
+      'Darknell': 'Normal Darknell',
+      'Verus Hilla': 'Normal Verus Hilla',
+      'Black Mage': 'Hard Black Mage',
+      'Von Leon': 'Normal Von Leon',
+      'Arkarium': 'Normal Arkarium',
+      'Magnus': 'Normal Magnus'
     };
-    const imagePath = bossImageMap[bossName] || 'placeholder.svg';
-    return imagePath;
+    
+    const fullBossName = bossNameMap[bossName] || bossName;
+    const bossMeta = getBossMeta(fullBossName);
+    if (bossMeta) {
+      return getAssetUrl(bossMeta.imageUrl);
+    }
+    return getAssetUrl('bosses/placeholder.png');
   };
 
   // Get current quest boss name for display
@@ -62,7 +72,7 @@ export const LiberationInputs = ({ inputs, onUpdate, onBossUpdate, onReset }: Li
           <div 
             className="absolute bg-center bg-no-repeat"
             style={{
-              backgroundImage: `url(/${getBossImage(inputs.liberationQuest)})`,
+              backgroundImage: `url(${getBossImage(inputs.liberationQuest)})`,
               backgroundSize: 'auto 200%',
               backgroundPosition: 'left',
               backgroundRepeat: 'no-repeat',
@@ -106,12 +116,12 @@ export const LiberationInputs = ({ inputs, onUpdate, onBossUpdate, onReset }: Li
                       <div className="flex items-center space-x-2">
                         <div className="w-4 h-4 rounded overflow-hidden bg-muted/20 flex items-center justify-center flex-shrink-0">
                           <img 
-                            src={`/${getBossImage(option.value)}`}
+                            src={getBossImage(option.value)}
                             alt={option.label}
                             className="w-full h-full object-cover"
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
-                              target.src = '/placeholder.svg';
+                              target.src = getAssetUrl('bosses/placeholder.png');
                             }}
                           />
                         </div>

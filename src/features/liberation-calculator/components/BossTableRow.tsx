@@ -4,6 +4,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { PARTY_SIZES, LIBERATION_LABELS, BOSS_DATA } from '../constants';
 import { BossTableRow as BossTableRowType } from '../types';
 import { Users } from 'lucide-react';
+import { getBossMeta } from '@/lib/bossData';
+import { getAssetUrl } from '@/lib/utils';
 
 interface BossTableRowProps {
   boss: BossTableRowType;
@@ -41,18 +43,27 @@ export const BossTableRow = ({ boss, onUpdate, genesisPass = 'no' }: BossTableRo
   };
 
   const getBossImage = (bossName: string) => {
-    // Map boss names to their image files
-    const bossImageMap: Record<string, string> = {
-      'Lotus': 'bosses/lotus.png',
-      'Damien': 'bosses/damien.png', 
-      'Lucid': 'bosses/lucid.png',
-      'Will': 'bosses/will.png',
-      'Gloom': 'bosses/gloom.png',
-      'Verus Hilla': 'bosses/verus-hilla.png',
-      'Darknell': 'bosses/darknell.png',
-      'Black Mage': 'bosses/black-mage.png'
+    // Map simple boss names to their "Normal" difficulty versions for image lookup
+    const bossNameMap: Record<string, string> = {
+      'Lotus': 'Normal Lotus',
+      'Damien': 'Normal Damien',
+      'Lucid': 'Normal Lucid',
+      'Will': 'Normal Will',
+      'Gloom': 'Normal Gloom',
+      'Darknell': 'Normal Darknell',
+      'Verus Hilla': 'Normal Verus Hilla',
+      'Black Mage': 'Hard Black Mage',
+      'Von Leon': 'Normal Von Leon',
+      'Arkarium': 'Normal Arkarium',
+      'Magnus': 'Normal Magnus'
     };
-    return bossImageMap[bossName] || 'placeholder.svg';
+    
+    const fullBossName = bossNameMap[bossName] || bossName;
+    const bossMeta = getBossMeta(fullBossName);
+    if (bossMeta) {
+      return getAssetUrl(bossMeta.imageUrl);
+    }
+    return getAssetUrl('bosses/placeholder.png');
   };
 
   const getAvailableDifficulties = () => {
@@ -66,7 +77,7 @@ export const BossTableRow = ({ boss, onUpdate, genesisPass = 'no' }: BossTableRo
       <div className="flex items-center space-x-3">
         <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-muted/20 flex items-center justify-center flex-shrink-0">
           <img 
-            src={`/${getBossImage(boss.bossName)}`}
+            src={getBossImage(boss.bossName)}
             alt={boss.bossName}
             className="w-full h-full object-cover"
             onError={(e) => {
