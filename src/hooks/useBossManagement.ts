@@ -35,7 +35,7 @@ export function useBossManagement(options: UseBossManagementOptions = {}) {
         setTempDisabledByCharacter(JSON.parse(storedTempDisabled));
       }
 
-      const storedParty = localStorage.getItem('maplehub_boss_party');
+      const storedParty = localStorage.getItem('maplehub_boss_party_sizes');
       if (storedParty) {
         setPartyByCharacter(JSON.parse(storedParty));
       }
@@ -63,7 +63,7 @@ export function useBossManagement(options: UseBossManagementOptions = {}) {
 
   useEffect(() => {
     try {
-      localStorage.setItem('maplehub_boss_party', JSON.stringify(partyByCharacter));
+      localStorage.setItem('maplehub_boss_party_sizes', JSON.stringify(partyByCharacter));
     } catch (error) {
       console.error('Failed to save boss party data:', error);
     }
