@@ -19,7 +19,8 @@ import {
   Calculator,
   Wrench,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  MessageCircle
 } from 'lucide-react';
 import { ServerStatusIndicator } from './ServerStatusIndicator';
 
@@ -36,6 +37,7 @@ const Navigation = () => {
 
   const toolItems = useMemo(() => [
     { name: 'Liberation Calculator', path: '/liberation-calculator', icon: Calculator },
+    { name: 'Fragment Calculator', path: '/fragment-calculator', icon: Calculator },
   ], []);
 
   const [toolsExpanded, setToolsExpanded] = useState(() => {
@@ -172,7 +174,22 @@ const Navigation = () => {
         })}
       </div>
 
-      <div className="px-4 py-4 border-t border-border/50 mt-4">
+      <div className="px-4 py-4 border-t border-border/50 mt-4 space-y-2">
+        <a
+          href="https://discord.gg/DykSm9Pd9D"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block"
+        >
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 border-indigo-200 hover:border-indigo-300 text-indigo-800 hover:text-indigo-900 shadow-sm hover:shadow-md transition-all duration-200"
+          >
+            <MessageCircle className="h-4 w-4 mr-2" />
+            Join Discord
+          </Button>
+        </a>
         <a
           href="https://buymeacoffee.com/lzaguri10a"
           target="_blank"
@@ -332,7 +349,22 @@ const Navigation = () => {
                   })}
                 </div>
 
-                <div className="px-4 py-4 border-t border-border/50 mt-4">
+                <div className="px-4 py-4 border-t border-border/50 mt-4 space-y-2">
+                  <a
+                    href="https://discord.gg/DykSm9Pd9D"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block"
+                  >
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 border-indigo-200 hover:border-indigo-300 text-indigo-800 hover:text-indigo-900 shadow-sm hover:shadow-md transition-all duration-200"
+                    >
+                      <MessageCircle className="h-4 w-4 mr-2" />
+                      Join Discord
+                    </Button>
+                  </a>
                   <a
                     href="https://buymeacoffee.com/lzaguri10a"
                     target="_blank"
