@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Character, CharacterRegion } from '../types/roster';
+import { getCharacterJobName } from '../utils/jobMapping';
 import {
   loadCharacters,
   saveCharacters,
@@ -156,7 +157,10 @@ export const useRoster = () => {
       const newCharacter: Character = {
         id: globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`,
         name: character.name,
-        class: character.additionalData?.class || 'Unknown',
+        class: getCharacterJobName({
+          jobID: character.jobID,
+          jobDetail: character.jobDetail
+        }),
         level: character.level,
         exp: character.exp || 0,
         reboot: character.worldName?.includes('Reboot') || false,
@@ -167,7 +171,13 @@ export const useRoster = () => {
         raidPower: character.raidPower,
         region: character.region,
         worldName: character.worldName,
-        additionalData: character.additionalData,
+        additionalData: {
+          // Only include specific fields from additionalData
+          ...(character.additionalData?.achievement && { achievement: character.additionalData.achievement }),
+          ...(character.additionalData?.expData && { expData: character.additionalData.expData }),
+          ...(character.additionalData?.expGraphData && { expGraphData: character.additionalData.expGraphData }),
+          ...(character.additionalData?.legion && { legion: character.additionalData.legion }),
+        },
       };
 
       // Check for duplicates
@@ -281,7 +291,10 @@ export const useRoster = () => {
         ...character, // Preserve all existing data
         level: data.level || character.level,
         exp: data.exp || character.exp,
-        class: data.jobDetail || character.class || 'Unknown',
+        class: getCharacterJobName({
+          jobID: data.jobID,
+          jobDetail: data.jobDetail
+        }),
         lastUpdated: new Date().toISOString(),
         legionLevel: data.legionLevel !== null ? data.legionLevel : character.legionLevel,
         raidPower: data.raidPower !== null ? data.raidPower : character.raidPower,
@@ -289,12 +302,14 @@ export const useRoster = () => {
         region: data.region || character.region,
         worldName: data.worldName || character.worldName,
         isMain: data.isMain !== undefined ? data.isMain : character.isMain,
-        // Merge additionalData more carefully
+        // Only include specific fields from additionalData
         additionalData: {
           ...character.additionalData, // Preserve existing additionalData
-          ...data.additionalData, // Override with new data
-          // Always use the most up-to-date expGraphData
-          expGraphData: data.additionalData?.expGraphData || character.additionalData?.expGraphData,
+          // Only extract the fields we want from new data
+          ...(data.additionalData?.achievement && { achievement: data.additionalData.achievement }),
+          ...(data.additionalData?.expData && { expData: data.additionalData.expData }),
+          ...(data.additionalData?.expGraphData && { expGraphData: data.additionalData.expGraphData }),
+          ...(data.additionalData?.legion && { legion: data.additionalData.legion }),
         }
       };
 
@@ -449,7 +464,10 @@ export const useRoster = () => {
         const newCharacter: Character = {
           id: globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`,
           name: character.name,
-          class: character.additionalData?.class || 'Unknown',
+          class: getCharacterJobName({
+            jobID: character.jobID,
+            jobDetail: character.jobDetail
+          }),
           level: character.level,
           exp: character.exp || 0,
           reboot: character.worldName?.includes('Reboot') || false,
@@ -460,7 +478,13 @@ export const useRoster = () => {
           raidPower: character.raidPower,
           region: character.region,
           worldName: character.worldName,
-          additionalData: character.additionalData,
+          additionalData: {
+            // Only include specific fields from additionalData
+            ...(character.additionalData?.achievement && { achievement: character.additionalData.achievement }),
+            ...(character.additionalData?.expData && { expData: character.additionalData.expData }),
+            ...(character.additionalData?.expGraphData && { expGraphData: character.additionalData.expGraphData }),
+            ...(character.additionalData?.legion && { legion: character.additionalData.legion }),
+          },
         };
 
         return { name, character: newCharacter, success: true };
