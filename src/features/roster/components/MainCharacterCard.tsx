@@ -33,7 +33,7 @@ const MainCharacterCard: React.FC<MainCharacterCardProps> = ({
           <span>Main Character</span>
         </CardTitle>
         <div className="absolute top-4 right-4">
-          <HoverCard>
+          <HoverCard openDelay={0}>
             <HoverCardTrigger asChild>
               <div className="p-1.5 rounded-md bg-primary/10 hover:bg-primary/20 transition-colors cursor-help">
                 <Info className="h-5 w-5 text-primary" />
