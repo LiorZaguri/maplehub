@@ -37,7 +37,7 @@ const Navigation = () => {
 
   const toolItems = useMemo(() => [
     { name: 'Liberation Calculator', path: '/liberation-calculator', icon: Calculator },
-    { name: 'Fragment Calculator', path: '/fragment-calculator', icon: Calculator },
+
   ], []);
 
   const [toolsExpanded, setToolsExpanded] = useState(() => {
