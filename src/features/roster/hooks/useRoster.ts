@@ -76,13 +76,11 @@ export const useRoster = () => {
     // Initial load
     handleStorageChange();
 
-    // Listen for storage changes
+    // Listen for storage changes (but not rosterUpdate to avoid conflicts with move operations)
     window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('rosterUpdate', handleStorageChange);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('rosterUpdate', handleStorageChange);
     };
   }, []);
 
@@ -231,12 +229,13 @@ export const useRoster = () => {
     [updatedCharacters[fromIndex], updatedCharacters[newIndex]] = 
     [updatedCharacters[newIndex], updatedCharacters[fromIndex]];
     
-    setCharacters(updatedCharacters);
-    saveCharacters(updatedCharacters);
-    
-    // Save character order
+    // Save character order first
     const characterOrder = updatedCharacters.map(c => c.id);
     saveCharacterOrder(characterOrder);
+    
+    // Then save characters and update state
+    setCharacters(updatedCharacters);
+    saveCharacters(updatedCharacters);
   };
 
   const setCharacterAsMain = (characterId: string) => {
@@ -259,6 +258,53 @@ export const useRoster = () => {
     }
   };
 
+  // Helper function to refresh a single character
+  const refreshCharacter = async (character: Character): Promise<Character> => {
+    try {
+      // Use character's actual region, fallback to 'na'
+      const region = character.region || 'na';
+      
+      const { data, error } = await supabase.functions.invoke('nexon-character-lookup', {
+        body: { 
+          characterName: character.name, 
+          region: region
+        }
+      });
+
+      if (error || !data?.name) {
+        console.warn(`Failed to refresh ${character.name}:`, error?.message || 'No data returned');
+        throw new Error(error?.message || 'No data returned');
+      }
+
+      // Merge data more comprehensively, preserving existing data
+      const updatedCharacter: Character = {
+        ...character, // Preserve all existing data
+        level: data.level || character.level,
+        exp: data.exp || character.exp,
+        class: data.jobDetail || character.class || 'Unknown',
+        lastUpdated: new Date().toISOString(),
+        legionLevel: data.legionLevel !== null ? data.legionLevel : character.legionLevel,
+        raidPower: data.raidPower !== null ? data.raidPower : character.raidPower,
+        avatarUrl: data.characterImgURL || character.avatarUrl,
+        region: data.region || character.region,
+        worldName: data.worldName || character.worldName,
+        isMain: data.isMain !== undefined ? data.isMain : character.isMain,
+        // Merge additionalData more carefully
+        additionalData: {
+          ...character.additionalData, // Preserve existing additionalData
+          ...data.additionalData, // Override with new data
+          // Always use the most up-to-date expGraphData
+          expGraphData: data.additionalData?.expGraphData || character.additionalData?.expGraphData,
+        }
+      };
+
+      return updatedCharacter;
+    } catch (error) {
+      console.error(`Error refreshing ${character.name}:`, error);
+      throw error;
+    }
+  };
+
   const refreshAllCharacters = async () => {
     if (characters.length === 0) {
       toast({
@@ -270,52 +316,96 @@ export const useRoster = () => {
     }
 
     setIsLoading(true);
-    const refreshPromises = characters.map(async (character) => {
-      try {
-        const { data, error } = await supabase.functions.invoke('nexon-character-lookup', {
-          body: { 
-            characterName: character.name, 
-            region: character.reboot ? 'na' : 'na' // Simplified for now
-          }
-        });
+    let successCount = 0;
+    let errorCount = 0;
+    const refreshedCharacters: Character[] = [];
 
-        if (error || !data?.name) {
+    // Process characters in batches to avoid rate limiting
+    const batchSize = 5;
+    const batches = [];
+    for (let i = 0; i < characters.length; i += batchSize) {
+      batches.push(characters.slice(i, i + batchSize));
+    }
+
+    for (const batch of batches) {
+      const batchPromises = batch.map(async (character) => {
+        try {
+          const updatedCharacter = await refreshCharacter(character);
+          successCount++;
+          return updatedCharacter;
+        } catch (error) {
+          errorCount++;
           return character; // Keep original if refresh fails
         }
+      });
 
-        return {
-          ...character,
-          level: data.level,
-          exp: data.exp || character.exp,
-          class: data.additionalData?.class || character.class,
-          lastUpdated: new Date().toISOString(),
-          legionLevel: data.legionLevel,
-          raidPower: data.raidPower,
-          avatarUrl: data.characterImgURL || character.avatarUrl,
-          region: data.region || character.region,
-          worldName: data.worldName || character.worldName,
-          additionalData: data.additionalData || character.additionalData,
-        };
-      } catch {
-        return character; // Keep original if refresh fails
+      const batchResults = await Promise.all(batchPromises);
+      refreshedCharacters.push(...batchResults);
+
+      // Add delay between batches to avoid rate limiting
+      if (batches.indexOf(batch) < batches.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
-    });
+    }
 
     try {
-      const refreshedCharacters = await Promise.all(refreshPromises);
       setCharacters(refreshedCharacters);
       saveCharacters(refreshedCharacters);
       
+      const message = errorCount > 0 
+        ? `Updated ${successCount} character(s), ${errorCount} failed to update`
+        : `Updated data for ${successCount} character(s)`;
+      
       toast({
         title: "Characters Refreshed",
-        description: `Updated data for ${refreshedCharacters.length} character(s)`,
-        className: "progress-complete",
+        description: message,
+        className: errorCount > 0 ? "warning" : "progress-complete",
         duration: 4000
       });
     } catch (error) {
+      console.error('Error saving refreshed characters:', error);
       toast({
-        title: "Refresh Error",
-        description: "Some characters could not be refreshed",
+        title: "Save Error",
+        description: "Characters were refreshed but couldn't be saved",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const refreshSingleCharacter = async (characterId: string) => {
+    const character = characters.find(c => c.id === characterId);
+    if (!character) {
+      toast({
+        title: "Character Not Found",
+        description: "Character could not be found for refresh",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const updatedCharacter = await refreshCharacter(character);
+      
+      const updatedCharacters = characters.map(c => 
+        c.id === characterId ? updatedCharacter : c
+      );
+      
+      setCharacters(updatedCharacters);
+      saveCharacters(updatedCharacters);
+      
+      toast({
+        title: "Character Refreshed",
+        description: `${updatedCharacter.name} has been updated`,
+        className: "progress-complete",
+        duration: 3000
+      });
+    } catch (error) {
+      toast({
+        title: "Refresh Failed",
+        description: `Could not refresh ${character.name}`,
         variant: "destructive"
       });
     } finally {
@@ -442,11 +532,41 @@ export const useRoster = () => {
     }
   };
 
-  // Computed values
-  const mainCharacter = characters.find(c => c.isMain) || 
-                       characters.reduce((highest, current) => 
-                         current.level > (highest?.level || 0) ? current : highest, 
-                         null as Character | null);
+  // Computed values - handle multiple main characters
+  const mainCharacters = characters.filter(c => c.isMain);
+  let mainCharacter: Character | null = null;
+  
+  if (mainCharacters.length === 1) {
+    // Exactly one main character - use it
+    mainCharacter = mainCharacters[0];
+  } else if (mainCharacters.length > 1) {
+    // Multiple main characters - pick the highest level one and fix the others
+    mainCharacter = mainCharacters.reduce((highest, current) => 
+      current.level > highest.level ? current : highest);
+    
+    // Fix the other characters by setting isMain to false
+    const updatedCharacters = characters.map(c => 
+      c.isMain && c.id !== mainCharacter?.id ? { ...c, isMain: false } : c
+    );
+    
+    // Only update if there were changes
+    if (updatedCharacters.some((c, i) => c.isMain !== characters[i].isMain)) {
+      setCharacters(updatedCharacters);
+      saveCharacters(updatedCharacters);
+      
+      toast({
+        title: "Main Character Conflict Resolved",
+        description: `Multiple characters were marked as main. Set ${mainCharacter.name} as the main character.`,
+        className: "warning",
+        duration: 4000
+      });
+    }
+  } else {
+    // No main characters - auto-detect highest level
+    mainCharacter = characters.reduce((highest, current) => 
+      current.level > (highest?.level || 0) ? current : highest, 
+      null as Character | null);
+  }
 
   const mainLegion = mainCharacter?.legionLevel;
   const mainRaidPower = mainCharacter?.raidPower;
@@ -510,6 +630,7 @@ export const useRoster = () => {
     moveCharacter,
     setCharacterAsMain,
     refreshAllCharacters,
+    refreshSingleCharacter,
     handleBulkAdd,
     selectCharacterForExpGraph,
   };

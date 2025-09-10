@@ -68,8 +68,8 @@ const CharacterGrid: React.FC<CharacterGridProps> = ({
                   character={character}
                   variant="roster"
                   index={filteredIndex}
-                  onMoveUp={() => onMoveCharacter(fullIndex, -1)}
-                  onMoveDown={() => onMoveCharacter(fullIndex, 1)}
+                  onMoveUp={() => onMoveCharacter(filteredIndex, -1)}
+                  onMoveDown={() => onMoveCharacter(filteredIndex, 1)}
                   onEditBosses={() => onEditBosses(character.name)}
                   onRemove={() => onRemoveCharacter(character.id)}
                   onSetAsMain={onSetAsMain}
