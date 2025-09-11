@@ -80,12 +80,12 @@ export const SkillRow = ({
         {/* Skill Icon */}
         <div className="relative flex-shrink-0">
           <img
-            src={`/skill-images/${skill.icon}`}
+            src={`./skill-images/${skill.icon}`}
             alt={skill.name}
             className="w-8 h-8 rounded"
             onError={(e) => {
               const target = e.target as HTMLImageElement;
-              target.src = '/placeholder.svg';
+              target.src = './placeholder.svg';
             }}
           />
           {isComplete && (

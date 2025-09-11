@@ -71,12 +71,12 @@ export const NextUpgradeCard = ({
             <div className="flex items-center gap-3">
               <div className="relative">
                 <img
-                  src={`/skill-images/${nextUpgrade.icon}`}
+                  src={`./skill-images/${nextUpgrade.icon}`}
                   alt={nextUpgrade.name}
                   className="w-8 h-8 rounded"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
-                    target.src = '/placeholder.svg';
+                    target.src = './placeholder.svg';
                   }}
                 />
                 <Badge 
@@ -100,7 +100,7 @@ export const NextUpgradeCard = ({
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2">
                     <img 
-                      src="/skill-images/fragment.png" 
+                      src="./skill-images/fragment.png" 
                       alt="Fragment" 
                       className="h-[27px] w-[27px]"
                     />
@@ -112,7 +112,7 @@ export const NextUpgradeCard = ({
                   <div className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-2">
                       <img 
-                        src="/skill-images/sol_erda.png" 
+                        src="./skill-images/sol_erda.png" 
                         alt="Sol Erda" 
                         className="h-[27px] w-[27px]"
                       />

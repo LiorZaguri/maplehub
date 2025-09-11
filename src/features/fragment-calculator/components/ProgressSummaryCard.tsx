@@ -45,7 +45,7 @@ export const ProgressSummaryCard = ({
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
               <img 
-                src="/skill-images/fragment.png" 
+                src="./skill-images/fragment.png" 
                 alt="Fragment" 
                 className="h-[27px] w-[27px]"
               />
