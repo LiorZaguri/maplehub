@@ -91,8 +91,6 @@ export const createFragmentCharacter = (rosterCharacter: any): FragmentCharacter
     jobName = rosterCharacter.class;
   }
   
-  console.log(`🔧 DEBUG: Resolved job name: "${jobName}"`);
-  
   const hexaSkills = getDefaultSkillsForJob(jobName);
   const progression = calculateProgression(hexaSkills);
   const dailyRate = {
@@ -102,8 +100,6 @@ export const createFragmentCharacter = (rosterCharacter: any): FragmentCharacter
     weeklies: 55,
   };
   const estimatedCompletionDays = calculateCompletionEstimate(hexaSkills, dailyRate);
-
-  console.log(`🔧 DEBUG: Created character with ${hexaSkills.length} skills`);
 
   return {
     ...rosterCharacter,

@@ -10,7 +10,7 @@ import { NextUpgradeCard } from './NextUpgradeCard';
 import { SkillRow } from './SkillRow';
 import { FragmentRateCalculator } from './FragmentRateCalculator';
 import { getTotalCost } from '../utils/costTables';
-import { getNextUpgradePriority } from '../utils/hexaPriority';
+import { getSkillsByPriority } from '../utils/hexaPriority';
 
 interface CharacterDetailScreenProps {
   character: FragmentCharacter;
@@ -52,19 +52,19 @@ export const CharacterDetailScreen = ({
 
   // Find next upgrade priority using class-specific leveling order
   const nextUpgrade = useMemo(() => {
-    console.log(`🔧 DEBUG: CharacterDetailScreen - Calculating next upgrade for ${character.jobName}`);
-    const prioritySkill = getNextUpgradePriority(character.hexaSkills, undefined, character.jobName);
-    if (!prioritySkill) {
-      console.log(`🔧 DEBUG: CharacterDetailScreen - No priority skill found`);
+    const prioritySkills = getSkillsByPriority(character.hexaSkills, character.jobName);
+    if (!prioritySkills || prioritySkills.length === 0) {
       return null;
     }
     
-    console.log(`🔧 DEBUG: CharacterDetailScreen - Selected skill: ${prioritySkill.name} (${prioritySkill.skillType}) - Current: ${prioritySkill.currentLevel}, Target: ${prioritySkill.targetLevel}`);
+    const prioritySkill = prioritySkills[0]; // Get the highest priority skill
+    const nextLevel = prioritySkill.nextOptimalLevel || (prioritySkill.skill.currentLevel + 1);
     
     // Add calculated costs for the next level
     return {
-      ...prioritySkill,
-      costs: getTotalCost(prioritySkill.skillType, prioritySkill.currentLevel, prioritySkill.currentLevel + 1)
+      ...prioritySkill.skill,
+      targetLevel: nextLevel, // Use the optimal level from class order
+      costs: getTotalCost(prioritySkill.skill.skillType, prioritySkill.skill.currentLevel, nextLevel)
     };
   }, [character.hexaSkills, character.jobName]);
 

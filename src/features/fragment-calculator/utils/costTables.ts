@@ -36,6 +36,10 @@ export const FRAGMENT_COST_ARRAYS: Record<SkillType, number[]> = {
 // Calculate cumulative cost up to a specific level (matching working calculator logic)
 export const getCumulativeCost = (skillType: SkillType, level: number): number => {
   const costArray = FRAGMENT_COST_ARRAYS[skillType];
+  if (!costArray) {
+    console.warn(`No cost array found for skill type: ${skillType}`);
+    return 0;
+  }
   if (level <= 0) return 0;
   if (level > costArray.length) return 0;
   
@@ -45,6 +49,10 @@ export const getCumulativeCost = (skillType: SkillType, level: number): number =
 // Calculate cumulative Sol Erda cost up to a specific level
 export const getCumulativeSolErdaCost = (skillType: SkillType, level: number): number => {
   const costArray = SOL_ERDA_COST_ARRAYS[skillType];
+  if (!costArray) {
+    console.warn(`No Sol Erda cost array found for skill type: ${skillType}`);
+    return 0;
+  }
   if (level <= 0) return 0;
   if (level > costArray.length) return 0;
   
@@ -55,6 +63,11 @@ export const getCumulativeSolErdaCost = (skillType: SkillType, level: number): n
 export const getLevelCost = (skillType: SkillType, level: number): { solErda: number; fragments: number } => {
   const fragmentCostArray = FRAGMENT_COST_ARRAYS[skillType];
   const solErdaCostArray = SOL_ERDA_COST_ARRAYS[skillType];
+  
+  if (!fragmentCostArray || !solErdaCostArray) {
+    console.warn(`No cost arrays found for skill type: ${skillType}`);
+    return { solErda: 0, fragments: 0 };
+  }
   
   const fragmentCost = fragmentCostArray[level - 1] || 0; // Array is 0-indexed, level is 1-indexed
   const solErdaCost = solErdaCostArray[level - 1] || 0;
