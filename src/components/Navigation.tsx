@@ -187,7 +187,7 @@ const Navigation = () => {
             className="w-full bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 border-indigo-200 hover:border-indigo-300 text-indigo-800 hover:text-indigo-900 shadow-sm hover:shadow-md transition-all duration-200"
           >
             <MessageCircle className="h-4 w-4 mr-2" />
-            Join Discord
+            Join MapleHub Discord!
           </Button>
         </a>
         <a
@@ -362,7 +362,7 @@ const Navigation = () => {
                       className="w-full bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 border-indigo-200 hover:border-indigo-300 text-indigo-800 hover:text-indigo-900 shadow-sm hover:shadow-md transition-all duration-200"
                     >
                       <MessageCircle className="h-4 w-4 mr-2" />
-                      Join Discord
+                      Join MapleHub Discord!
                     </Button>
                   </a>
                   <a
