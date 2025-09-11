@@ -18,6 +18,7 @@ import {
   loadBossVariantsForCharacter,
   loadBossBaseEnabledForCharacter
 } from '../services/rosterService';
+import { getCharacterWorldMultiplier } from '@/features/boss-tracker/utils/bossUtils';
 
 export interface BossEditorDialogProps {
   open: boolean;
@@ -419,6 +420,7 @@ const BossEditorDialog: React.FC<BossEditorDialogProps> = ({
             partySizes={partySizes}
             characters={characters}
             characterName={characterName}
+            worldMultiplier={characterName ? getCharacterWorldMultiplier(characters.find(c => c.name === characterName) || {} as Character) : 1.0}
             makeGroupKey={makeGroupKey}
             setBaseEnabledByBase={setBaseEnabledByBase}
             setSelectedVariantByBase={setSelectedVariantByBase}

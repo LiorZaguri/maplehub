@@ -25,6 +25,7 @@ export interface BossEditorDesktopLayoutProps {
   partySizes: Record<string, number>;
   characters: Character[];
   characterName: string | null;
+  worldMultiplier: number;
   makeGroupKey: (category: string, base: string) => string;
   setBaseEnabledByBase: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
   setSelectedVariantByBase: React.Dispatch<React.SetStateAction<Record<string, string>>>;
@@ -64,6 +65,7 @@ const BossEditorDesktopLayout: React.FC<BossEditorDesktopLayoutProps> = ({
   partySizes,
   characters,
   characterName,
+  worldMultiplier,
   makeGroupKey,
   setBaseEnabledByBase,
   setSelectedVariantByBase,
@@ -269,8 +271,6 @@ const BossEditorDesktopLayout: React.FC<BossEditorDesktopLayoutProps> = ({
             <div className="text-sm font-semibold text-primary">
               {(() => {
                 let totalWeeklyMesos = 0;
-                // Determine world multiplier based on character's world
-                const worldMultiplier = 1; // This would need to be passed as a prop
 
                 // Calculate weekly bosses earnings
                 filteredGroupedWeekly.forEach(([base, variants]) => {
