@@ -16,6 +16,7 @@ const VITracker = lazy(() => import("./pages/VITracker"));
 const Mules = lazy(() => import("./pages/Mules"));
 const ServerStatus = lazy(() => import("./pages/ServerStatus"));
 const LiberationCalculator = lazy(() => import("./pages/LiberationCalculator"));
+const FragmentCalculator = lazy(() => import("./pages/FragmentCalculator"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Loading component
@@ -54,6 +55,7 @@ const App = () => (
             <Route path="/mules" element={<Mules />} />
             <Route path="/server-status" element={<ServerStatus />} />
             <Route path="/liberation-calculator" element={<LiberationCalculator />} />
+            <Route path="/fragment-calculator" element={<FragmentCalculator />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
