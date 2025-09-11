@@ -1,9 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Character, CharacterRegion } from '../types/roster';
 import { getCharacterJobName } from '../utils/jobMapping';
+import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import {
   loadCharacters,
   saveCharacters,
@@ -66,12 +67,17 @@ export const useRoster = () => {
   const [selectedExpCharacter, setSelectedExpCharacter] = useState<Character | null>(null);
   const [expChartTimePeriod, setExpChartTimePeriod] = useState<'7D' | '14D' | '30D'>('7D');
 
+  // Ref to track if main character conflict was already resolved
+  const mainCharacterConflictResolvedRef = useRef(false);
+
   // Listen for roster changes from localStorage
   useEffect(() => {
     const handleStorageChange = () => {
       const loadedCharacters = loadCharacters();
       const orderedCharacters = getOrderedCharacters(loadedCharacters);
       setCharacters(orderedCharacters);
+      // Reset the conflict resolution flag when characters change
+      mainCharacterConflictResolvedRef.current = false;
     };
 
     // Initial load
@@ -573,10 +579,11 @@ export const useRoster = () => {
       c.isMain && c.id !== mainCharacter?.id ? { ...c, isMain: false } : c
     );
     
-    // Only update if there were changes
-    if (updatedCharacters.some((c, i) => c.isMain !== characters[i].isMain)) {
+    // Only update if there were changes and we haven't already resolved this conflict
+    if (updatedCharacters.some((c, i) => c.isMain !== characters[i].isMain) && !mainCharacterConflictResolvedRef.current) {
       setCharacters(updatedCharacters);
       saveCharacters(updatedCharacters);
+      mainCharacterConflictResolvedRef.current = true;
       
       toast({
         title: "Main Character Conflict Resolved",
@@ -598,6 +605,49 @@ export const useRoster = () => {
   const selectCharacterForExpGraph = (character: Character) => {
     setSelectedExpCharacter(character);
   };
+
+  // Auto-refresh configuration - silent refresh during reset hours
+  const autoRefreshConfig = useCallback(async () => {
+    if (characters.length === 0) return;
+    
+    // Use existing refresh logic but silently (no toast notifications)
+    const refreshedCharacters: Character[] = [];
+    const batchSize = 5;
+    const batches = [];
+    
+    for (let i = 0; i < characters.length; i += batchSize) {
+      batches.push(characters.slice(i, i + batchSize));
+    }
+
+    for (const batch of batches) {
+      const batchPromises = batch.map(async (character) => {
+        try {
+          const updatedCharacter = await refreshCharacter(character);
+          return updatedCharacter;
+        } catch (error) {
+          return character; // Keep original if refresh fails
+        }
+      });
+
+      const batchResults = await Promise.all(batchPromises);
+      refreshedCharacters.push(...batchResults);
+
+      // Add delay between batches to avoid rate limiting
+      if (batches.indexOf(batch) < batches.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+
+    // Update characters silently
+    setCharacters(refreshedCharacters);
+    saveCharacters(refreshedCharacters);
+  }, [characters, refreshCharacter]);
+
+  // Auto-refresh hook
+  const autoRefresh = useAutoRefresh({
+    onRefresh: autoRefreshConfig,
+    isEnabled: characters.length > 0
+  });
 
   return {
     // State
@@ -657,5 +707,15 @@ export const useRoster = () => {
     refreshSingleCharacter,
     handleBulkAdd,
     selectCharacterForExpGraph,
+
+    // Auto-refresh info (for debugging/UI)
+    autoRefreshInfo: {
+      shouldRefresh: autoRefresh.shouldRefresh,
+      isInResetHours: autoRefresh.isInResetHours,
+      currentUTCHour: autoRefresh.currentUTCHour,
+      lastVisitTimestamp: autoRefresh.lastVisitTimestamp,
+      lastAutoRefreshHour: autoRefresh.lastAutoRefreshHour,
+      lastRefreshDone: autoRefresh.lastRefreshDone
+    }
   };
 };

@@ -1,0 +1,134 @@
+import { useCallback, useEffect, useRef } from 'react';
+import { useLocalStorage } from './useLocalStorage';
+
+interface AutoRefreshConfig {
+  onRefresh: () => Promise<void>;
+  isEnabled?: boolean;
+}
+
+interface AutoRefreshState {
+  lastVisitTimestamp: number;
+  lastAutoRefreshHour: number | null;
+  lastRefreshDone: number | null; // Timestamp when last refresh was actually performed
+}
+
+const RESET_HOURS = [18, 19, 20, 21]; // UTC hours for auto-refresh
+const STORAGE_KEY = 'maplehub_auto_refresh_state';
+
+export const useAutoRefresh = ({ onRefresh, isEnabled = true }: AutoRefreshConfig) => {
+  const [autoRefreshState, setAutoRefreshState] = useLocalStorage<AutoRefreshState>(
+    STORAGE_KEY,
+    {
+      lastVisitTimestamp: Date.now(),
+      lastAutoRefreshHour: null,
+      lastRefreshDone: null
+    }
+  );
+
+  // Migrate old state structure to new one
+  useEffect(() => {
+    if (autoRefreshState && (autoRefreshState.lastRefreshDone === undefined)) {
+      setAutoRefreshState(prev => ({
+        ...prev,
+        lastRefreshDone: null
+      }));
+    }
+  }, [autoRefreshState, setAutoRefreshState]);
+
+  const isRefreshingRef = useRef(false);
+  const hasUpdatedTimestampRef = useRef(false);
+
+  // Get current UTC hour
+  const getCurrentUTCHour = useCallback(() => {
+    return new Date().getUTCHours();
+  }, []);
+
+  // Check if current time is in reset hours
+  const isInResetHours = useCallback(() => {
+    const currentHour = getCurrentUTCHour();
+    return RESET_HOURS.includes(currentHour);
+  }, [getCurrentUTCHour]);
+
+  // Check if refresh is needed
+  const shouldRefresh = useCallback(() => {
+    if (!isEnabled || isRefreshingRef.current) return false;
+    if (!isInResetHours()) return false;
+
+    const currentHour = getCurrentUTCHour();
+    const lastRefreshHour = autoRefreshState.lastAutoRefreshHour;
+
+    // If we already refreshed this hour, don't refresh again
+    if (lastRefreshHour === currentHour) return false;
+
+    // Check if we need to refresh based on lastRefreshDone
+    const currentHourStart = new Date();
+    currentHourStart.setUTCHours(currentHour, 0, 0, 0);
+    const currentHourStartTime = currentHourStart.getTime();
+
+    // If no refresh has been done yet, or last refresh was before current hour's reset
+    return autoRefreshState.lastRefreshDone === null || autoRefreshState.lastRefreshDone === undefined || autoRefreshState.lastRefreshDone < currentHourStartTime;
+  }, [isEnabled, isInResetHours, getCurrentUTCHour, autoRefreshState.lastAutoRefreshHour, autoRefreshState.lastRefreshDone]);
+
+  // Perform auto-refresh
+  const performAutoRefresh = useCallback(async () => {
+    if (!shouldRefresh()) return;
+
+    try {
+      isRefreshingRef.current = true;
+      const currentHour = getCurrentUTCHour();
+      const refreshTimestamp = Date.now();
+      
+      // Update state before refresh to prevent duplicate refreshes
+      setAutoRefreshState(prev => ({
+        ...prev,
+        lastAutoRefreshHour: currentHour
+      }));
+
+      await onRefresh();
+
+      // Update timestamps after successful refresh
+      setAutoRefreshState(prev => ({
+        ...prev,
+        lastVisitTimestamp: refreshTimestamp,
+        lastRefreshDone: refreshTimestamp
+      }));
+
+    } catch (error) {
+      console.warn('Auto-refresh failed:', error);
+      // Reset the refresh hour on failure so it can be retried
+      setAutoRefreshState(prev => ({
+        ...prev,
+        lastAutoRefreshHour: null
+      }));
+    } finally {
+      isRefreshingRef.current = false;
+    }
+  }, [shouldRefresh, onRefresh, getCurrentUTCHour, setAutoRefreshState]);
+
+  // Update last visit timestamp on mount only (once per session)
+  useEffect(() => {
+    if (isEnabled && !hasUpdatedTimestampRef.current) {
+      hasUpdatedTimestampRef.current = true;
+      setAutoRefreshState(prev => ({
+        ...prev,
+        lastVisitTimestamp: Date.now()
+      }));
+    }
+  }, [isEnabled]);
+
+  // Check for auto-refresh on mount
+  useEffect(() => {
+    if (isEnabled && shouldRefresh()) {
+      performAutoRefresh();
+    }
+  }, [isEnabled, shouldRefresh, performAutoRefresh]);
+
+  return {
+    shouldRefresh: shouldRefresh(),
+    isInResetHours: isInResetHours(),
+    currentUTCHour: getCurrentUTCHour(),
+    lastVisitTimestamp: autoRefreshState.lastVisitTimestamp,
+    lastAutoRefreshHour: autoRefreshState.lastAutoRefreshHour,
+    lastRefreshDone: autoRefreshState.lastRefreshDone
+  };
+};
