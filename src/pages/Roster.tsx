@@ -26,6 +26,7 @@ const Roster = () => {
     expChartTimePeriod,
     bulkNamesInput,
     isLoading,
+    isDataRefreshing,
     characterRegion,
     isBossDialogOpen,
     pendingCharacterName,
@@ -109,6 +110,7 @@ const Roster = () => {
           mainCharacter={mainCharacter}
           expChartTimePeriod={expChartTimePeriod}
           onTimePeriodChange={setExpChartTimePeriod}
+          isDataRefreshing={isDataRefreshing}
         />
       </div>
 

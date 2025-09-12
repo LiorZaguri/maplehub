@@ -38,6 +38,7 @@ export const useRoster = () => {
   const [newCharacterName, setNewCharacterName] = useState('');
   const [bulkNamesInput, setBulkNamesInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isDataRefreshing, setIsDataRefreshing] = useState(false);
   const [characterRegion, setCharacterRegion] = useState<CharacterRegion>('na');
   
   // Boss dialog state
@@ -145,6 +146,7 @@ export const useRoster = () => {
   const addCharacter = async (name: string, region: CharacterRegion = 'na') => {
     try {
       setIsLoading(true);
+      setIsDataRefreshing(true);
       
       // Fetch character data from Nexon API via Supabase
       const { data, error } = await supabase.functions.invoke('nexon-character-lookup', {
@@ -218,6 +220,7 @@ export const useRoster = () => {
       throw error;
     } finally {
       setIsLoading(false);
+      setIsDataRefreshing(false);
     }
   };
 
@@ -307,7 +310,7 @@ export const useRoster = () => {
         avatarUrl: data.characterImgURL || character.avatarUrl,
         region: data.region || character.region,
         worldName: data.worldName || character.worldName,
-        isMain: data.isMain !== undefined ? data.isMain : character.isMain,
+        isMain: character.isMain, // Never update isMain from API - keep local value
         // Only include specific fields from additionalData
         additionalData: {
           ...character.additionalData, // Preserve existing additionalData
@@ -337,6 +340,7 @@ export const useRoster = () => {
     }
 
     setIsLoading(true);
+    setIsDataRefreshing(true);
     let successCount = 0;
     let errorCount = 0;
     const refreshedCharacters: Character[] = [];
@@ -392,6 +396,7 @@ export const useRoster = () => {
       });
     } finally {
       setIsLoading(false);
+      setIsDataRefreshing(false);
     }
   };
 
@@ -407,6 +412,7 @@ export const useRoster = () => {
     }
 
     setIsLoading(true);
+    setIsDataRefreshing(true);
     try {
       const updatedCharacter = await refreshCharacter(character);
       
@@ -431,6 +437,7 @@ export const useRoster = () => {
       });
     } finally {
       setIsLoading(false);
+      setIsDataRefreshing(false);
     }
   };
 
@@ -445,6 +452,7 @@ export const useRoster = () => {
     if (names.length === 0) return;
 
     setIsLoading(true);
+    setIsDataRefreshing(true);
 
     try {
       // Add all characters to roster first (works like single character addition)
@@ -559,10 +567,41 @@ export const useRoster = () => {
       console.error('Error during bulk add:', error);
     } finally {
       setIsLoading(false);
+      setIsDataRefreshing(false);
     }
   };
 
-  // Computed values - handle multiple main characters
+  // Handle main character conflict resolution in useEffect to prevent repeated toasts
+  useEffect(() => {
+    const mainCharacters = characters.filter(c => c.isMain);
+    
+    if (mainCharacters.length > 1) {
+      // Multiple main characters - pick the highest level one and fix the others
+      const mainCharacter = mainCharacters.reduce((highest, current) => 
+        current.level > highest.level ? current : highest);
+      
+      // Fix the other characters by setting isMain to false
+      const updatedCharacters = characters.map(c => 
+        c.isMain && c.id !== mainCharacter?.id ? { ...c, isMain: false } : c
+      );
+      
+      // Only update if there were changes and we haven't already resolved this conflict
+      if (updatedCharacters.some((c, i) => c.isMain !== characters[i].isMain) && !mainCharacterConflictResolvedRef.current) {
+        setCharacters(updatedCharacters);
+        saveCharacters(updatedCharacters);
+        mainCharacterConflictResolvedRef.current = true;
+        
+        toast({
+          title: "Main Character Conflict Resolved",
+          description: `Multiple characters were marked as main. Set ${mainCharacter.name} as the main character.`,
+          className: "warning",
+          duration: 4000
+        });
+      }
+    }
+  }, [characters, toast]); // Only run when characters change
+
+  // Computed values - handle main character selection (simplified)
   const mainCharacters = characters.filter(c => c.isMain);
   let mainCharacter: Character | null = null;
   
@@ -570,28 +609,9 @@ export const useRoster = () => {
     // Exactly one main character - use it
     mainCharacter = mainCharacters[0];
   } else if (mainCharacters.length > 1) {
-    // Multiple main characters - pick the highest level one and fix the others
+    // Multiple main characters - pick the highest level one (conflict resolution will fix this)
     mainCharacter = mainCharacters.reduce((highest, current) => 
       current.level > highest.level ? current : highest);
-    
-    // Fix the other characters by setting isMain to false
-    const updatedCharacters = characters.map(c => 
-      c.isMain && c.id !== mainCharacter?.id ? { ...c, isMain: false } : c
-    );
-    
-    // Only update if there were changes and we haven't already resolved this conflict
-    if (updatedCharacters.some((c, i) => c.isMain !== characters[i].isMain) && !mainCharacterConflictResolvedRef.current) {
-      setCharacters(updatedCharacters);
-      saveCharacters(updatedCharacters);
-      mainCharacterConflictResolvedRef.current = true;
-      
-      toast({
-        title: "Main Character Conflict Resolved",
-        description: `Multiple characters were marked as main. Set ${mainCharacter.name} as the main character.`,
-        className: "warning",
-        duration: 4000
-      });
-    }
   } else {
     // No main characters - auto-detect highest level
     mainCharacter = characters.reduce((highest, current) => 
@@ -610,7 +630,10 @@ export const useRoster = () => {
   const autoRefreshConfig = useCallback(async () => {
     if (characters.length === 0) return;
     
-    // Use existing refresh logic but silently (no toast notifications)
+    setIsDataRefreshing(true);
+    
+    try {
+      // Use existing refresh logic but silently (no toast notifications)
     const refreshedCharacters: Character[] = [];
     const batchSize = 5;
     const batches = [];
@@ -638,9 +661,12 @@ export const useRoster = () => {
       }
     }
 
-    // Update characters silently
-    setCharacters(refreshedCharacters);
-    saveCharacters(refreshedCharacters);
+      // Update characters silently
+      setCharacters(refreshedCharacters);
+      saveCharacters(refreshedCharacters);
+    } finally {
+      setIsDataRefreshing(false);
+    }
   }, [characters, refreshCharacter]);
 
   // Auto-refresh hook
@@ -660,6 +686,7 @@ export const useRoster = () => {
     newCharacterName,
     bulkNamesInput,
     isLoading,
+    isDataRefreshing,
     characterRegion,
     isBossDialogOpen,
     pendingCharacterName,
