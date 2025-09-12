@@ -52,7 +52,6 @@ export const useAutoRefresh = ({ onRefresh, isEnabled = true }: AutoRefreshConfi
   // Check if refresh is needed
   const shouldRefresh = useCallback(() => {
     if (!isEnabled || isRefreshingRef.current) return false;
-    if (!isInResetHours()) return false;
 
     const currentHour = getCurrentUTCHour();
     const lastRefreshHour = autoRefreshState.lastAutoRefreshHour;
@@ -66,7 +65,15 @@ export const useAutoRefresh = ({ onRefresh, isEnabled = true }: AutoRefreshConfi
     const currentHourStartTime = currentHourStart.getTime();
 
     // If no refresh has been done yet, or last refresh was before current hour's reset
-    return autoRefreshState.lastRefreshDone === null || autoRefreshState.lastRefreshDone === undefined || autoRefreshState.lastRefreshDone < currentHourStartTime;
+    const needsRefresh = autoRefreshState.lastRefreshDone === null || autoRefreshState.lastRefreshDone === undefined || autoRefreshState.lastRefreshDone < currentHourStartTime;
+
+    // Allow refresh if:
+    // 1. We're currently in reset hours, OR
+    // 2. We're outside reset hours but missed a refresh (needsRefresh is true)
+    const inResetHours = isInResetHours();
+    const missedRefresh = !inResetHours && needsRefresh;
+
+    return inResetHours || missedRefresh;
   }, [isEnabled, isInResetHours, getCurrentUTCHour, autoRefreshState.lastAutoRefreshHour, autoRefreshState.lastRefreshDone]);
 
   // Perform auto-refresh
