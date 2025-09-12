@@ -60,11 +60,11 @@ export const CharacterDetailScreen = ({
     const prioritySkill = prioritySkills[0]; // Get the highest priority skill
     const nextLevel = prioritySkill.nextOptimalLevel || (prioritySkill.skill.currentLevel + 1);
     
-    // Add calculated costs for the next level
+    // Add calculated costs for the immediate next level only (current + 1)
     return {
       ...prioritySkill.skill,
       targetLevel: nextLevel, // Use the optimal level from class order
-      costs: getTotalCost(prioritySkill.skill.skillType, prioritySkill.skill.currentLevel, nextLevel)
+      costs: getTotalCost(prioritySkill.skill.skillType, prioritySkill.skill.currentLevel, prioritySkill.skill.currentLevel + 1)
     };
   }, [character.hexaSkills, character.jobName]);
 

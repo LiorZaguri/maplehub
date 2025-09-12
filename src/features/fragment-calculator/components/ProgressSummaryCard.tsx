@@ -83,7 +83,7 @@ export const ProgressSummaryCard = ({
           )}
           <div className="flex justify-between text-xs text-muted-foreground">
             <span>{isLoading ? <Skeleton className="h-3 w-20" /> : `${fragmentsSpent.toLocaleString()} Fragments`}</span>
-            <span>{isLoading ? <Skeleton className="h-3 w-20" /> : `Target: ${fragmentsRemaining.toLocaleString()} Fragments`}</span>
+            <span>{isLoading ? <Skeleton className="h-3 w-20" /> : `Target: ${fragmentsTotal.toLocaleString()} Fragments`}</span>
           </div>
         </div>
 
@@ -97,7 +97,7 @@ export const ProgressSummaryCard = ({
             )}
             <div className="flex justify-between text-xs text-muted-foreground">
               <span>{isLoading ? <Skeleton className="h-3 w-20" /> : `${solErdaSpent.toLocaleString()} Sol Erda`}</span>
-              <span>{isLoading ? <Skeleton className="h-3 w-20" /> : `Target: ${solErdaRemaining.toLocaleString()} Sol Erda`}</span>
+              <span>{isLoading ? <Skeleton className="h-3 w-20" /> : `Target: ${solErdaTotal.toLocaleString()} Sol Erda`}</span>
             </div>
           </div>
         )}

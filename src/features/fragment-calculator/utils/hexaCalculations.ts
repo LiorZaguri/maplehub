@@ -18,15 +18,15 @@ export const calculateProgression = (skills: HEXASkill[]): HEXAProgression => {
   // Filter out disabled skills (Ascent) from fragment calculations
   const activeSkills = skills.filter(skill => !skill.id.includes('-skill-10')); // Ascent is always the 10th skill
   
-  // Total fragments and Sol Erda needed for all active skills at max level
+  // Total fragments and Sol Erda needed for all active skills at target level
   const totalFragments = activeSkills.reduce((sum, skill) => {
-    const maxCost = getTotalCost(skill.skillType, 0, skill.maxLevel);
-    return sum + maxCost.fragments;
+    const targetCost = getTotalCost(skill.skillType, 0, skill.targetLevel);
+    return sum + targetCost.fragments;
   }, 0);
 
   const totalSolErda = activeSkills.reduce((sum, skill) => {
-    const maxCost = getTotalCost(skill.skillType, 0, skill.maxLevel);
-    return sum + maxCost.solErda;
+    const targetCost = getTotalCost(skill.skillType, 0, skill.targetLevel);
+    return sum + targetCost.solErda;
   }, 0);
 
   const spentFragments = activeSkills.reduce((sum, skill) => {
