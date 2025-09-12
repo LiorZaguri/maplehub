@@ -43,7 +43,7 @@ jobs:
         run: npm ci
 
       - name: Build
-        run: npm run build:prod
+        run: npm run build:obfuscated
         env:
           NODE_ENV: production
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
