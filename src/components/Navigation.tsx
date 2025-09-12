@@ -18,6 +18,8 @@ import {
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { useGoogleDrive } from '@/hooks/useGoogleDrive';
+import { googleDriveService } from '@/services/googleDriveService';
 import {
   Users,
   Sword,
@@ -32,7 +34,9 @@ import {
   ChevronUp,
   MessageCircle,
   Download,
-  Upload
+  Upload,
+  Cloud,
+  CloudDownload
 } from 'lucide-react';
 import LZString from 'lz-string';
 import { ServerStatusIndicator } from './ServerStatusIndicator';
@@ -46,6 +50,33 @@ const Navigation = () => {
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [exportData, setExportData] = useState('');
   const [isImporting, setIsImporting] = useState(false);
+  const [fileSelectorOpen, setFileSelectorOpen] = useState(false);
+  const [driveDialogOpen, setDriveDialogOpen] = useState(false);
+  const [customFilename, setCustomFilename] = useState('');
+  const [saveCount, setSaveCount] = useState(0);
+  const [driveFiles, setDriveFiles] = useState<any[]>([]);
+  const [isLoadingFiles, setIsLoadingFiles] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
+  
+  const { uploadToDrive, downloadFromDrive, authenticate, isLoading: isGDriveLoading } = useGoogleDrive();
+
+  // Check for existing authentication on component mount
+  useEffect(() => {
+    const checkExistingAuth = async () => {
+      try {
+        const isAlreadyAuthenticated = await googleDriveService.isAuthenticated();
+        if (isAlreadyAuthenticated) {
+          setIsAuthenticated(true);
+        }
+      } catch (error) {
+        // If check fails, user is not authenticated
+        setIsAuthenticated(false);
+      }
+    };
+
+    checkExistingAuth();
+  }, []);
 
   const navItems = useMemo(() => [
     { name: 'Roster', path: '/', icon: Users },
@@ -107,6 +138,194 @@ const Navigation = () => {
         description: "Your export data has been copied to the clipboard.",
       });
     });
+  };
+
+  // Upload to Google Drive
+  const handleUploadToDrive = async () => {
+    const filename = `maplehub-backup-${new Date().toISOString().split('T')[0]}.json`;
+    await uploadToDrive(exportData, filename);
+  };
+
+  // Download from Google Drive
+  const handleDownloadFromDrive = async (fileId: string) => {
+    const data = await downloadFromDrive(fileId);
+    if (data) {
+      setImportData(data);
+      setImportDialogOpen(true);
+    }
+  };
+
+  // Handle Google Drive authentication
+  const handleGoogleDriveAuth = async () => {
+    setIsAuthenticating(true);
+    try {
+      // Check if user is already authenticated (this will check existing tokens silently)
+      const isAlreadyAuthenticated = await authenticate();
+      if (isAlreadyAuthenticated) {
+        setIsAuthenticated(true);
+        await loadDriveFiles();
+        toast({
+          title: "Connected to Google Drive",
+          description: "You can now manage your backups.",
+        });
+      } else {
+        toast({
+          title: "Authentication failed",
+          description: "Could not connect to Google Drive. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Authentication failed",
+        description: "Could not connect to Google Drive. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAuthenticating(false);
+    }
+  };
+
+  // Load files from Google Drive
+  const loadDriveFiles = async () => {
+    setIsLoadingFiles(true);
+    try {
+      const files = await googleDriveService.listFiles();
+      setDriveFiles(files);
+      setSaveCount(files.length);
+    } catch (error) {
+      console.error('Failed to load files:', error);
+      toast({
+        title: "Failed to load files",
+        description: "Could not retrieve files from Google Drive.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingFiles(false);
+    }
+  };
+
+  // Save new backup to Drive
+  const handleSaveNewBackup = async () => {
+    if (saveCount >= 3) {
+      toast({
+        title: "Save limit reached",
+        description: "You can only save 3 backups to Google Drive. Please delete old backups first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const data: Record<string, any> = {};
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key) {
+        try {
+          data[key] = JSON.parse(localStorage.getItem(key) || '');
+        } catch {
+          data[key] = localStorage.getItem(key);
+        }
+      }
+    }
+    
+    const jsonString = JSON.stringify(data);
+    const base64String = btoa(encodeURIComponent(jsonString));
+    
+    const filename = customFilename.trim() || `maplehub-backup-${new Date().toISOString().split('T')[0]}`;
+    const fullFilename = filename.endsWith('.json') ? filename : `${filename}.json`;
+    
+    const fileId = await uploadToDrive(base64String, fullFilename);
+    if (fileId) {
+      setCustomFilename('');
+      await loadDriveFiles(); // Refresh the file list
+      toast({
+        title: "Backup saved!",
+        description: "Your data has been saved to Google Drive.",
+      });
+    }
+  };
+
+  // Load backup from Drive
+  const handleLoadBackup = async (fileId: string) => {
+    const data = await downloadFromDrive(fileId);
+    if (data) {
+      try {
+        let parsedData;
+        
+        // Try to parse as base64 first, then as regular JSON
+        try {
+          const decodedString = atob(data);
+          try {
+            parsedData = JSON.parse(decodeURIComponent(decodedString));
+          } catch {
+            parsedData = JSON.parse(decodedString);
+          }
+        } catch {
+          parsedData = JSON.parse(data);
+        }
+        
+        Object.entries(parsedData).forEach(([key, value]) => {
+          localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
+        });
+        
+        toast({
+          title: "Data loaded successfully!",
+          description: "Your data has been loaded from Google Drive. Refreshing the page...",
+        });
+        
+        setDriveDialogOpen(false);
+        
+        // Auto-refresh after a short delay
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
+        
+      } catch (error) {
+        toast({
+          title: "Load failed",
+          description: "Failed to load data from Google Drive. Please try again.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  // Delete backup from Drive
+  const handleDeleteBackup = async (fileId: string) => {
+    try {
+      await googleDriveService.deleteFile(fileId);
+      await loadDriveFiles(); // Refresh the file list
+      toast({
+        title: "Backup deleted",
+        description: "The backup has been removed from Google Drive.",
+      });
+    } catch (error) {
+      toast({
+        title: "Delete failed",
+        description: "Failed to delete the backup. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Sign out from Google Drive
+  const handleSignOut = async () => {
+    try {
+      await googleDriveService.signOut();
+      setIsAuthenticated(false);
+      setDriveFiles([]);
+      setSaveCount(0);
+      toast({
+        title: "Signed out",
+        description: "You have been signed out of Google Drive.",
+      });
+    } catch (error) {
+      toast({
+        title: "Sign out failed",
+        description: "Failed to sign out. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Import localStorage data from pasted text
@@ -340,14 +559,24 @@ const Navigation = () => {
                 <div className="text-sm text-muted-foreground">
                   Data size: ~{Math.round(exportData.length / 1024)}KB • Includes: all localStorage data
                 </div>
-                <div className="flex justify-end gap-2">
+                <div className="flex justify-between gap-2">
                   <Button variant="outline" onClick={() => setExportDialogOpen(false)}>
                     Close
                   </Button>
-                  <Button onClick={copyExportData}>
-                    <Download className="h-4 w-4 mr-2" />
-                    Copy to Clipboard
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      onClick={handleUploadToDrive}
+                      disabled={isGDriveLoading}
+                    >
+                      <Cloud className="h-4 w-4 mr-2" />
+                      {isGDriveLoading ? "Uploading..." : "Save to Drive"}
+                    </Button>
+                    <Button onClick={copyExportData}>
+                      <Download className="h-4 w-4 mr-2" />
+                      Copy to Clipboard
+                    </Button>
+                  </div>
                 </div>
               </div>
             </DialogContent>
@@ -390,7 +619,7 @@ const Navigation = () => {
                   onChange={(e) => setImportData(e.target.value)}
                   className="min-h-[200px]"
                 />
-                <div className="flex justify-end gap-2">
+                <div className="flex justify-between gap-2">
                   <Button 
                     variant="outline" 
                     onClick={() => setImportDialogOpen(false)}
@@ -398,14 +627,183 @@ const Navigation = () => {
                   >
                     Cancel
                   </Button>
-                  <Button onClick={handleImport} disabled={isImporting}>
-                    {isImporting ? "Importing..." : "Import"}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setFileSelectorOpen(true)}
+                      disabled={isGDriveLoading}
+                    >
+                      <CloudDownload className="h-4 w-4 mr-2" />
+                      {isGDriveLoading ? "Loading..." : "Load from Drive"}
+                    </Button>
+                    <Button onClick={handleImport} disabled={isImporting}>
+                      {isImporting ? "Importing..." : "Import"}
+                    </Button>
+                  </div>
                 </div>
               </div>
             </DialogContent>
           </Dialog>
         </div>
+
+        {/* Unified Google Drive Button */}
+        <Dialog open={driveDialogOpen} onOpenChange={async (open) => {
+          setDriveDialogOpen(open);
+          if (open) {
+            // Check if user is already authenticated silently (no popup)
+            try {
+              const isAlreadyAuthenticated = await googleDriveService.isAuthenticated();
+              if (isAlreadyAuthenticated) {
+                setIsAuthenticated(true);
+                await loadDriveFiles();
+              }
+            } catch (error) {
+              // If check fails, show login prompt
+              setIsAuthenticated(false);
+            }
+          } else {
+            // Only reset authenticating state when dialog closes, keep authenticated state
+            setIsAuthenticating(false);
+          }
+        }}>
+          <DialogTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full justify-center space-x-2"
+            >
+              <Cloud className="h-4 w-4" />
+              <span>Google Drive</span>
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[600px]">
+            <DialogHeader>
+              <DialogTitle>Google Drive Backups</DialogTitle>
+              <DialogDescription>
+                {isAuthenticated 
+                  ? "Manage your MapleHub data backups in Google Drive. You can save up to 3 backups."
+                  : "Connect to Google Drive to save and load your MapleHub data backups."
+                }
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              {!isAuthenticated ? (
+                /* Login Prompt */
+                <div className="text-center py-8 space-y-4">
+                  <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+                    <Cloud className="h-8 w-8 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-medium">Connect to Google Drive</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Sign in to Google Drive to save and load your MapleHub backups
+                    </p>
+                  </div>
+                  <Button 
+                    onClick={handleGoogleDriveAuth}
+                    disabled={isAuthenticating}
+                    className="w-full"
+                  >
+                    {isAuthenticating ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Connecting...
+                      </>
+                    ) : (
+                      <>
+                        <Cloud className="h-4 w-4 mr-2" />
+                        Sign in with Google Drive
+                      </>
+                    )}
+                  </Button>
+                </div>
+              ) : (
+                /* Backup Management Interface */
+                <>
+                  {/* Save New Backup Section */}
+                  <div className="border rounded-lg p-4 space-y-3">
+                    <h3 className="font-medium text-sm">Save New Backup</h3>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={customFilename}
+                        onChange={(e) => setCustomFilename(e.target.value)}
+                        placeholder="my-backup (optional)"
+                        className="flex-1 px-3 py-2 border border-input rounded-md bg-background text-sm"
+                      />
+                      <Button 
+                        onClick={handleSaveNewBackup} 
+                        disabled={isGDriveLoading || saveCount >= 3}
+                        size="sm"
+                      >
+                        {isGDriveLoading ? "Saving..." : "Save"}
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Saves used: {saveCount}/3
+                    </p>
+                  </div>
+
+                  {/* Existing Backups Section */}
+                  <div className="border rounded-lg p-4 space-y-3">
+                    <h3 className="font-medium text-sm">Existing Backups</h3>
+                    {isLoadingFiles ? (
+                      <div className="text-center py-4 text-muted-foreground">Loading backups...</div>
+                    ) : driveFiles.length === 0 ? (
+                      <div className="text-center py-4 text-muted-foreground">No backups found</div>
+                    ) : (
+                      <div className="space-y-2">
+                        {driveFiles.map((file) => (
+                          <div key={file.id} className="flex items-center justify-between p-3 border rounded-md bg-muted/50">
+                            <div className="flex-1">
+                              <p className="font-medium text-sm">{file.name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {new Date(file.createdTime).toLocaleDateString()} at {new Date(file.createdTime).toLocaleTimeString()}
+                              </p>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleLoadBackup(file.id)}
+                                disabled={isGDriveLoading}
+                              >
+                                Load
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleDeleteBackup(file.id)}
+                                disabled={isGDriveLoading}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                Delete
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                          </div>
+                        </>
+                      )}
+                      
+                      {/* Sign Out Button - Only show when authenticated */}
+                      {isAuthenticated && (
+                        <div className="pt-4 border-t">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleSignOut}
+                            className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            Sign Out of Google Drive
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </DialogContent>
+        </Dialog>
       </div>
 
       <div className="px-4 py-4 border-t border-border/50 mt-4 space-y-2">
@@ -441,7 +839,7 @@ const Navigation = () => {
         </a>
         </div>
     </div>
-  ), [navItems, location.pathname, setIsOpen, toolsExpanded, handleExport, handleImport, importDialogOpen, importData, exportDialogOpen, exportData, copyExportData, isImporting]);
+  ), [navItems, location.pathname, setIsOpen, toolsExpanded, handleExport, handleImport, importDialogOpen, importData, exportDialogOpen, exportData, copyExportData, isImporting, handleUploadToDrive, handleDownloadFromDrive, isGDriveLoading, driveDialogOpen, customFilename, saveCount, isAuthenticated, isAuthenticating, handleGoogleDriveAuth, loadDriveFiles, handleSaveNewBackup, handleLoadBackup, handleDeleteBackup, handleSignOut]);
 
   return (
     <>
@@ -628,14 +1026,24 @@ const Navigation = () => {
                           <div className="text-sm text-muted-foreground">
                             Data size: ~{Math.round(exportData.length / 1024)}KB • Includes: all localStorage data
                           </div>
-                          <div className="flex justify-end gap-2">
+                          <div className="flex justify-between gap-2">
                             <Button variant="outline" onClick={() => setExportDialogOpen(false)}>
                               Close
                             </Button>
-                            <Button onClick={copyExportData}>
-                              <Download className="h-4 w-4 mr-2" />
-                              Copy to Clipboard
-                            </Button>
+                            <div className="flex gap-2">
+                              <Button 
+                                variant="outline" 
+                                onClick={handleUploadToDrive}
+                                disabled={isGDriveLoading}
+                              >
+                                <Cloud className="h-4 w-4 mr-2" />
+                                {isGDriveLoading ? "Uploading..." : "Save to Drive"}
+                              </Button>
+                              <Button onClick={copyExportData}>
+                                <Download className="h-4 w-4 mr-2" />
+                                Copy to Clipboard
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       </DialogContent>
@@ -678,7 +1086,7 @@ const Navigation = () => {
                             onChange={(e) => setImportData(e.target.value)}
                             className="min-h-[200px]"
                           />
-                          <div className="flex justify-end gap-2">
+                          <div className="flex justify-between gap-2">
                             <Button 
                               variant="outline" 
                               onClick={() => setImportDialogOpen(false)}
@@ -686,9 +1094,19 @@ const Navigation = () => {
                             >
                               Cancel
                             </Button>
-                            <Button onClick={handleImport} disabled={isImporting}>
-                              {isImporting ? "Importing..." : "Import"}
-                            </Button>
+                            <div className="flex gap-2">
+                              <Button 
+                                variant="outline" 
+                                onClick={() => setFileSelectorOpen(true)}
+                                disabled={isGDriveLoading}
+                              >
+                                <CloudDownload className="h-4 w-4 mr-2" />
+                                {isGDriveLoading ? "Loading..." : "Load from Drive"}
+                              </Button>
+                              <Button onClick={handleImport} disabled={isImporting}>
+                                {isImporting ? "Importing..." : "Import"}
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       </DialogContent>
@@ -696,7 +1114,166 @@ const Navigation = () => {
                   </div>
                 </div>
 
-                <div className="px-4 py-4 border-t border-border/50 mt-4 space-y-2">
+                {/* Mobile Unified Google Drive Button */}
+                <Dialog open={driveDialogOpen} onOpenChange={async (open) => {
+                  setDriveDialogOpen(open);
+                  if (open) {
+                    // Check if user is already authenticated silently (no popup)
+                    try {
+                      const isAlreadyAuthenticated = await googleDriveService.isAuthenticated();
+                      if (isAlreadyAuthenticated) {
+                        setIsAuthenticated(true);
+                        await loadDriveFiles();
+                      }
+                    } catch (error) {
+                      // If check fails, show login prompt
+                      setIsAuthenticated(false);
+                    }
+                  } else {
+                    // Only reset authenticating state when dialog closes, keep authenticated state
+                    setIsAuthenticating(false);
+                  }
+                }}>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full justify-center space-x-2"
+                    >
+                      <Cloud className="h-4 w-4" />
+                      <span>Google Drive</span>
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[600px]">
+                    <DialogHeader>
+                      <DialogTitle>Google Drive Backups</DialogTitle>
+                      <DialogDescription>
+                        {isAuthenticated 
+                          ? "Manage your MapleHub data backups in Google Drive. You can save up to 3 backups."
+                          : "Connect to Google Drive to save and load your MapleHub data backups."
+                        }
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      {!isAuthenticated ? (
+                        /* Login Prompt */
+                        <div className="text-center py-8 space-y-4">
+                          <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+                            <Cloud className="h-8 w-8 text-blue-600" />
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-medium">Connect to Google Drive</h3>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              Sign in to Google Drive to save and load your MapleHub backups
+                            </p>
+                          </div>
+                          <Button 
+                            onClick={handleGoogleDriveAuth}
+                            disabled={isAuthenticating}
+                            className="w-full"
+                          >
+                            {isAuthenticating ? (
+                              <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                Connecting...
+                              </>
+                            ) : (
+                              <>
+                                <Cloud className="h-4 w-4 mr-2" />
+                                Sign in with Google Drive
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      ) : (
+                        /* Backup Management Interface */
+                        <>
+                          {/* Save New Backup Section */}
+                          <div className="border rounded-lg p-4 space-y-3">
+                            <h3 className="font-medium text-sm">Save New Backup</h3>
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                value={customFilename}
+                                onChange={(e) => setCustomFilename(e.target.value)}
+                                placeholder="my-backup (optional)"
+                                className="flex-1 px-3 py-2 border border-input rounded-md bg-background text-sm"
+                              />
+                              <Button 
+                                onClick={handleSaveNewBackup} 
+                                disabled={isGDriveLoading || saveCount >= 3}
+                                size="sm"
+                              >
+                                {isGDriveLoading ? "Saving..." : "Save"}
+                              </Button>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              Saves used: {saveCount}/3
+                            </p>
+                          </div>
+
+                          {/* Existing Backups Section */}
+                          <div className="border rounded-lg p-4 space-y-3">
+                            <h3 className="font-medium text-sm">Existing Backups</h3>
+                            {isLoadingFiles ? (
+                              <div className="text-center py-4 text-muted-foreground">Loading backups...</div>
+                            ) : driveFiles.length === 0 ? (
+                              <div className="text-center py-4 text-muted-foreground">No backups found</div>
+                            ) : (
+                              <div className="space-y-2">
+                                {driveFiles.map((file) => (
+                                  <div key={file.id} className="flex items-center justify-between p-3 border rounded-md bg-muted/50">
+                                    <div className="flex-1">
+                                      <p className="font-medium text-sm">{file.name}</p>
+                                      <p className="text-xs text-muted-foreground">
+                                        {new Date(file.createdTime).toLocaleDateString()} at {new Date(file.createdTime).toLocaleTimeString()}
+                                      </p>
+                                    </div>
+                                    <div className="flex gap-2">
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => handleLoadBackup(file.id)}
+                                        disabled={isGDriveLoading}
+                                      >
+                                        Load
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => handleDeleteBackup(file.id)}
+                                        disabled={isGDriveLoading}
+                                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                      >
+                                        Delete
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </>
+                      )}
+                      
+                      {/* Sign Out Button - Only show when authenticated */}
+                      {isAuthenticated && (
+                        <div className="pt-4 border-t">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleSignOut}
+                            className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            Sign Out of Google Drive
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </DialogContent>
+                </Dialog>
+
+              <div className="px-4 py-4 border-t border-border/50 mt-4 space-y-2">
                   <a
                     href="https://discord.gg/DykSm9Pd9D"
                     target="_blank"
@@ -733,6 +1310,7 @@ const Navigation = () => {
           </Sheet>
         </div>
       </div>
+
     </>
   );
 };
