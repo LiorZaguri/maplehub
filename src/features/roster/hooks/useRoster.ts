@@ -377,6 +377,9 @@ export const useRoster = () => {
       setCharacters(refreshedCharacters);
       saveCharacters(refreshedCharacters);
       
+      // Mark refresh as completed in auto-refresh state
+      autoRefresh.markRefreshCompleted();
+      
       const message = errorCount > 0 
         ? `Updated ${successCount} character(s), ${errorCount} failed to update`
         : `Updated data for ${successCount} character(s)`;
@@ -422,6 +425,9 @@ export const useRoster = () => {
       
       setCharacters(updatedCharacters);
       saveCharacters(updatedCharacters);
+      
+      // Mark refresh as completed in auto-refresh state
+      autoRefresh.markRefreshCompleted();
       
       toast({
         title: "Character Refreshed",
@@ -630,41 +636,48 @@ export const useRoster = () => {
   const autoRefreshConfig = useCallback(async () => {
     if (characters.length === 0) return;
     
+    setIsLoading(true);
     setIsDataRefreshing(true);
     
     try {
       // Use existing refresh logic but silently (no toast notifications)
-    const refreshedCharacters: Character[] = [];
-    const batchSize = 5;
-    const batches = [];
-    
-    for (let i = 0; i < characters.length; i += batchSize) {
-      batches.push(characters.slice(i, i + batchSize));
-    }
-
-    for (const batch of batches) {
-      const batchPromises = batch.map(async (character) => {
-        try {
-          const updatedCharacter = await refreshCharacter(character);
-          return updatedCharacter;
-        } catch (error) {
-          return character; // Keep original if refresh fails
-        }
-      });
-
-      const batchResults = await Promise.all(batchPromises);
-      refreshedCharacters.push(...batchResults);
-
-      // Add delay between batches to avoid rate limiting
-      if (batches.indexOf(batch) < batches.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
+      const refreshedCharacters: Character[] = [];
+      const batchSize = 5;
+      const batches = [];
+      
+      for (let i = 0; i < characters.length; i += batchSize) {
+        batches.push(characters.slice(i, i + batchSize));
       }
-    }
+
+      for (const batch of batches) {
+        const batchPromises = batch.map(async (character) => {
+          try {
+            const updatedCharacter = await refreshCharacter(character);
+            return updatedCharacter;
+          } catch (error) {
+            return character; // Keep original if refresh fails
+          }
+        });
+
+        const batchResults = await Promise.all(batchPromises);
+        refreshedCharacters.push(...batchResults);
+
+        // Add delay between batches to avoid rate limiting
+        if (batches.indexOf(batch) < batches.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
 
       // Update characters silently
       setCharacters(refreshedCharacters);
       saveCharacters(refreshedCharacters);
+      
+      console.log('Auto-refresh completed successfully');
+    } catch (error) {
+      console.error('Auto-refresh failed:', error);
+      throw error; // Re-throw to let useAutoRefresh handle it
     } finally {
+      setIsLoading(false);
       setIsDataRefreshing(false);
     }
   }, [characters, refreshCharacter]);

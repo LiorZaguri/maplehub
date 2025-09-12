@@ -85,23 +85,31 @@ export const useAutoRefresh = ({ onRefresh, isEnabled = true }: AutoRefreshConfi
       const currentHour = getCurrentUTCHour();
       const refreshTimestamp = Date.now();
       
+      console.log('Auto-refresh starting, current hour:', currentHour);
+      console.log('Auto-refresh state before:', autoRefreshState);
+      
       // Update state before refresh to prevent duplicate refreshes
       setAutoRefreshState(prev => ({
         ...prev,
         lastAutoRefreshHour: currentHour
       }));
 
+      console.log('Calling onRefresh...');
       await onRefresh();
+      console.log('onRefresh completed successfully');
 
       // Update timestamps after successful refresh
+      console.log('Updating auto-refresh state...');
       setAutoRefreshState(prev => ({
         ...prev,
         lastVisitTimestamp: refreshTimestamp,
         lastRefreshDone: refreshTimestamp
       }));
+      console.log('Auto-refresh state updated successfully');
 
     } catch (error) {
       console.warn('Auto-refresh failed:', error);
+      console.log('Auto-refresh failed, resetting lastAutoRefreshHour to null');
       // Reset the refresh hour on failure so it can be retried
       setAutoRefreshState(prev => ({
         ...prev,
@@ -130,12 +138,29 @@ export const useAutoRefresh = ({ onRefresh, isEnabled = true }: AutoRefreshConfi
     }
   }, [isEnabled, shouldRefresh, performAutoRefresh]);
 
+  // Function to manually mark a refresh as completed
+  const markRefreshCompleted = useCallback(() => {
+    const currentHour = getCurrentUTCHour();
+    const refreshTimestamp = Date.now();
+    const inResetHours = isInResetHours();
+    
+    setAutoRefreshState(prev => ({
+      ...prev,
+      // Only set lastAutoRefreshHour if we're in reset hours
+      // This prevents manual refreshes from interfering with auto-refresh logic
+      lastAutoRefreshHour: inResetHours ? currentHour : prev.lastAutoRefreshHour,
+      lastVisitTimestamp: refreshTimestamp,
+      lastRefreshDone: refreshTimestamp
+    }));
+  }, [getCurrentUTCHour, setAutoRefreshState, isInResetHours]);
+
   return {
     shouldRefresh: shouldRefresh(),
     isInResetHours: isInResetHours(),
     currentUTCHour: getCurrentUTCHour(),
     lastVisitTimestamp: autoRefreshState.lastVisitTimestamp,
     lastAutoRefreshHour: autoRefreshState.lastAutoRefreshHour,
-    lastRefreshDone: autoRefreshState.lastRefreshDone
+    lastRefreshDone: autoRefreshState.lastRefreshDone,
+    markRefreshCompleted
   };
 };
