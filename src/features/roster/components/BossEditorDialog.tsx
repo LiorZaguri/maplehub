@@ -419,7 +419,7 @@ const BossEditorDialog: React.FC<BossEditorDialogProps> = ({
           </div>
         </DialogHeader>
         
-        <div className="flex flex-col gap-4 h-full">
+        <div className="flex flex-col gap-2 flex-1 min-h-0">
           <BossEditorMobileLayout
             activeTab={activeTab}
             setActiveTab={setActiveTab}
@@ -494,10 +494,8 @@ const BossEditorDialog: React.FC<BossEditorDialogProps> = ({
           />
         </div>
 
-        <DialogFooter className="flex-shrink-0">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
+        <DialogFooter className="flex-shrink-0 mt-4 relative">
+
           <Button onClick={pendingBulkNames ? handleBulkSave : handleSave}>
             Save Configuration
           </Button>

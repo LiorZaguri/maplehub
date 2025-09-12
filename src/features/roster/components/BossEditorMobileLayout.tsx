@@ -241,7 +241,7 @@ const BossEditorMobileLayout: React.FC<BossEditorMobileLayoutProps> = ({
       </div>
 
       {/* Mobile Main Content - Flexible height */}
-      <div className="flex-1 min-h-0">
+      <div className="flex-1 min-h-0 flex flex-col">
         {/* Search Bar */}
         <div className="mb-4 flex-shrink-0">
           <Input
@@ -251,7 +251,8 @@ const BossEditorMobileLayout: React.FC<BossEditorMobileLayoutProps> = ({
             className="w-full"
           />
         </div>
-        <ScrollArea className="flex-1 rounded border p-4 h-[50vh]" style={{ border: '0' }}>
+        <div className="flex-1 min-h-0">
+          <ScrollArea className="h-full rounded border p-4" style={{ border: '0' }}>
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
             {([['monthly', filteredGroupedMonthly], ['weekly', filteredGroupedWeekly], ['daily', filteredGroupedDaily]] as const).map(([key, data]) => (
               <TabsContent key={key} value={key} className="m-0">
@@ -321,7 +322,8 @@ const BossEditorMobileLayout: React.FC<BossEditorMobileLayoutProps> = ({
               </TabsContent>
             ))}
           </Tabs>
-        </ScrollArea>
+          </ScrollArea>
+        </div>
       </div>
     </div>
   );

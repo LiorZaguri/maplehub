@@ -308,7 +308,7 @@ const BossEditorDesktopLayout: React.FC<BossEditorDesktopLayoutProps> = ({
       </div>
 
       {/* Main Content - Scrollable Boss Grid */}
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 overflow-hidden">
         {/* Search Bar */}
         <div className="mb-4">
           <Input

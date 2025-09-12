@@ -19,7 +19,7 @@ export const NextUpgradeCard = ({
   isLoading = false
 }: NextUpgradeCardProps) => {
   return (
-    <Card>
+    <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-secondary/5">
       <CardHeader className="pb-3 relative pr-12">
         <CardTitle className="text-lg flex items-center gap-2">
           <ArrowUp className="h-5 w-5 text-primary" />
