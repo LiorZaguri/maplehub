@@ -163,14 +163,7 @@ const ServerStatus = () => {
               Real-time monitoring of all Global MapleStory servers
             </p>
           </div>
-          <Button 
-            onClick={handleRefresh} 
-            disabled={loading} 
-            className="btn-accent w-full sm:w-auto"
-          >
-            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-            Refresh Status
-          </Button>
+
         </div>
 
 
