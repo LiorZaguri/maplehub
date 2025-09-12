@@ -104,7 +104,7 @@ export const BossTableRow = ({ boss, onUpdate, genesisPass = 'no' }: BossTableRo
       {/* Difficulty Level */}
       <div className="flex items-center">
         <Select value={boss.difficulty} onValueChange={handleDifficultyChange}>
-          <SelectTrigger className="w-full h-9">
+          <SelectTrigger className="w-full h-9" aria-label="Select boss difficulty">
             <SelectValue placeholder={LIBERATION_LABELS.SELECTION} />
           </SelectTrigger>
           <SelectContent>
@@ -120,7 +120,7 @@ export const BossTableRow = ({ boss, onUpdate, genesisPass = 'no' }: BossTableRo
       {/* Party Members */}
       <div className="flex items-center">
         <Select value={boss.partySize.toString()} onValueChange={handlePartySizeChange}>
-          <SelectTrigger className="w-full h-9">
+          <SelectTrigger className="w-full h-9" aria-label="Select party size">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

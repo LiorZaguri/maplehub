@@ -235,7 +235,7 @@ const Mules = () => {
               value={newMule.purpose} 
               onValueChange={(value: string) => setNewMule({ ...newMule, purpose: value })}
             >
-              <SelectTrigger>
+              <SelectTrigger aria-label="Select mule purpose">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -248,7 +248,7 @@ const Mules = () => {
               value={newMule.server} 
               onValueChange={(value: 'Reboot' | 'Regular') => setNewMule({ ...newMule, server: value })}
             >
-              <SelectTrigger>
+              <SelectTrigger aria-label="Select server type">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

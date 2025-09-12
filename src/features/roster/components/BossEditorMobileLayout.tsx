@@ -89,7 +89,7 @@ const BossEditorMobileLayout: React.FC<BossEditorMobileLayoutProps> = ({
         <div className="flex items-center justify-between gap-2 mb-3">
           {/* Tab Selector */}
           <Select value={activeTab} onValueChange={(value: BossCategory) => setActiveTab(value)}>
-            <SelectTrigger className="w-32 h-8 text-xs">
+            <SelectTrigger className="w-32 h-8 text-xs" aria-label="Select boss category">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -116,7 +116,7 @@ const BossEditorMobileLayout: React.FC<BossEditorMobileLayoutProps> = ({
 
           {/* Preset Selector */}
           <Select value={selectedPreset || ''} onValueChange={(value) => value && applyPreset(value)}>
-            <SelectTrigger className="flex-1 h-8 text-xs">
+            <SelectTrigger className="flex-1 h-8 text-xs" aria-label="Choose preset">
               <SelectValue placeholder="Choose preset..." />
             </SelectTrigger>
             <SelectContent>
@@ -132,6 +132,7 @@ const BossEditorMobileLayout: React.FC<BossEditorMobileLayoutProps> = ({
                             size="sm"
                             className="h-4 w-4 p-0 ml-2"
                             onClick={(e) => e.stopPropagation()}
+                            aria-label="More options"
                           >
                             <MoreHorizontal className="h-3 w-3" />
                           </Button>

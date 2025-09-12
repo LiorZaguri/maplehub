@@ -127,7 +127,7 @@ const BossCard: React.FC<BossCardProps> = ({
             value={selectedVariant}
             onValueChange={onVariantChange}
           >
-            <SelectTrigger className="w-full h-8 text-xs">
+            <SelectTrigger className="w-full h-8 text-xs" aria-label="Select boss variant">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

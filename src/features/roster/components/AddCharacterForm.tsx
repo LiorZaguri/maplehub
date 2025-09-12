@@ -37,7 +37,7 @@ const AddCharacterForm: React.FC<AddCharacterFormProps> = ({
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">Region:</span>
             <Select value={characterRegion} onValueChange={onRegionChange}>
-              <SelectTrigger className="w-32">
+              <SelectTrigger className="w-32" aria-label="Select region">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -66,6 +66,7 @@ const AddCharacterForm: React.FC<AddCharacterFormProps> = ({
               type="submit"
               disabled={isLoading}
               className="btn-hero w-auto"
+              aria-label={isLoading ? "Adding character..." : "Add character"}
             >
               {isLoading ? (
                 <RefreshCw className="h-4 w-4 animate-spin" />

@@ -107,6 +107,7 @@ const CharacterTaskGrid: React.FC<CharacterTaskGridProps> = ({
                         size="sm"
                         className="h-8 w-8 p-0"
                         title="More options"
+                        aria-label="More options"
                       >
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>

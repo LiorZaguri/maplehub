@@ -107,7 +107,7 @@ export const LiberationInputs = ({ inputs, onUpdate, onBossUpdate, onReset }: Li
             <div className="space-y-1">
               <Label className="text-xs font-medium text-muted-foreground">Current quest</Label>
               <Select value={inputs.liberationQuest} onValueChange={(value) => onUpdate('liberationQuest', value)}>
-                <SelectTrigger className="h-8">
+                <SelectTrigger className="h-8" aria-label="Select liberation quest">
                   <SelectValue placeholder={LIBERATION_LABELS.QUEST_SELECTION} />
                 </SelectTrigger>
                 <SelectContent>
@@ -164,7 +164,7 @@ export const LiberationInputs = ({ inputs, onUpdate, onBossUpdate, onReset }: Li
             <div className="space-y-1">
               <Label className="text-xs font-medium text-muted-foreground">Genesis Pass</Label>
               <Select value={inputs.genesisPass} onValueChange={(value) => onUpdate('genesisPass', value)}>
-                <SelectTrigger className="h-8">
+                <SelectTrigger className="h-8" aria-label="Select Genesis Pass">
                   <SelectValue placeholder="Genesis Pass" />
                 </SelectTrigger>
                 <SelectContent>

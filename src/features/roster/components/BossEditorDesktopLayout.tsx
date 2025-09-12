@@ -156,6 +156,7 @@ const BossEditorDesktopLayout: React.FC<BossEditorDesktopLayoutProps> = ({
                           variant="ghost"
                           size="sm"
                           className="h-8 w-8 p-0"
+                          aria-label="More options"
                         >
                           <MoreHorizontal className="h-3 w-3" />
                         </Button>

@@ -118,6 +118,7 @@ const TaskSelectorDialog: React.FC<TaskSelectorDialogProps> = ({
                     size="sm"
                     className="h-6 w-6 p-0"
                     onClick={handleSavePreset}
+                    aria-label="Save preset"
                   >
                     <Plus className="h-3 w-3" />
                   </Button>
@@ -146,6 +147,7 @@ const TaskSelectorDialog: React.FC<TaskSelectorDialogProps> = ({
                             size="sm"
                             className="h-6 w-6 p-0 text-destructive hover:text-destructive flex-shrink-0"
                             onClick={() => handleDeletePreset(presetName)}
+                            aria-label={`Delete preset ${presetName}`}
                           >
                             <Trash2 className="h-3 w-3" />
                           </Button>
