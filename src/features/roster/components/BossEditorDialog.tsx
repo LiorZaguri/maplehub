@@ -15,8 +15,7 @@ import { listAllBosses } from '@/lib/bossData';
 import { 
   loadBossEnabledForCharacter,
   loadBossPartySizesForCharacter,
-  loadBossVariantsForCharacter,
-  loadBossBaseEnabledForCharacter
+  loadBossVariantsForCharacter
 } from '../services/rosterService';
 import { getCharacterWorldMultiplier } from '@/features/boss-tracker/utils/bossUtils';
 
@@ -92,36 +91,65 @@ const BossEditorDialog: React.FC<BossEditorDialogProps> = ({
     },
   });
 
-  // Get currently selected bosses
+  // Get currently selected bosses - count all enabled variants directly from localStorage
   const getCurrentlySelectedBosses = () => {
     const selectedBosses: string[] = [];
-    ([['daily', groupedDaily], ['weekly', groupedWeekly], ['monthly', groupedMonthly]] as const).forEach(([cat, data]) => {
-      data.forEach(([base, variants]) => {
-        const gkey = makeGroupKey(cat, base);
-        const enabled = !!baseEnabledByBase[gkey];
-        if (enabled) {
-          const selectedVariant = selectedVariantByBase[gkey] || variants[0]?.name;
-          if (selectedVariant) {
-            selectedBosses.push(selectedVariant);
-          }
-        }
-      });
+    
+    // Get the character's enabled bosses directly from localStorage
+    const enabledForChar = characterName ? loadBossEnabledForCharacter(characterName) : {};
+    
+    // Add all enabled bosses to the list
+    Object.entries(enabledForChar).forEach(([bossName, enabled]) => {
+      if (enabled) {
+        selectedBosses.push(bossName);
+      }
     });
+    
     return selectedBosses;
   };
 
-  // Get boss counts by category
+  // Get boss counts by category - count all enabled variants directly from localStorage
   const getBossCountsByCategory = () => {
     const counts = { daily: 0, weekly: 0, monthly: 0 };
     
-    ([['daily', groupedDaily], ['weekly', groupedWeekly], ['monthly', groupedMonthly]] as const).forEach(([cat, data]) => {
-      data.forEach(([base, variants]) => {
-        const gkey = makeGroupKey(cat, base);
-        const enabled = !!baseEnabledByBase[gkey];
-        if (enabled) {
-          counts[cat]++;
+    // Get the character's enabled bosses directly from localStorage
+    const enabledForChar = characterName ? loadBossEnabledForCharacter(characterName) : {};
+    
+    // Count enabled bosses by category using the actual boss data
+    Object.entries(enabledForChar).forEach(([bossName, enabled]) => {
+      if (enabled) {
+        // Find which category this boss belongs to by checking the grouped data
+        let category: 'daily' | 'weekly' | 'monthly' | null = null;
+        
+        // Check daily bosses
+        groupedDaily.forEach(([base, variants]) => {
+          if (variants.some(v => v.name === bossName)) {
+            category = 'daily';
+          }
+        });
+        
+        // Check weekly bosses
+        if (!category) {
+          groupedWeekly.forEach(([base, variants]) => {
+            if (variants.some(v => v.name === bossName)) {
+              category = 'weekly';
+            }
+          });
         }
-      });
+        
+        // Check monthly bosses
+        if (!category) {
+          groupedMonthly.forEach(([base, variants]) => {
+            if (variants.some(v => v.name === bossName)) {
+              category = 'monthly';
+            }
+          });
+        }
+        
+        if (category) {
+          counts[category]++;
+        }
+      }
     });
     
     return counts;
@@ -135,7 +163,7 @@ const BossEditorDialog: React.FC<BossEditorDialogProps> = ({
         const enabledForChar = loadBossEnabledForCharacter(characterName);
         const characterParties = loadBossPartySizesForCharacter(characterName);
         const characterVariants = loadBossVariantsForCharacter(characterName);
-        const characterBaseEnabled = loadBossBaseEnabledForCharacter(characterName);
+        
         
         const defaults: Record<string, boolean> = {};
         const parties: Record<string, number> = {};
@@ -156,15 +184,30 @@ const BossEditorDialog: React.FC<BossEditorDialogProps> = ({
             if (existingVariant && variants.some(v => v.name === existingVariant)) {
               selectedByBase[key] = existingVariant;
             } else {
-              const preferred = variants.find(v => defaults[v.name]);
-              const pick = preferred?.name || variants[0]?.name;
-              if (pick) selectedByBase[key] = pick;
+              // Prefer an enabled variant if any exist
+              const enabledVariant = variants.find(v => enabledForChar[v.name] === true);
+              if (enabledVariant) {
+                selectedByBase[key] = enabledVariant.name;
+              } else {
+                const preferred = variants.find(v => defaults[v.name]);
+                const pick = preferred?.name || variants[0]?.name;
+                if (pick) {
+                  selectedByBase[key] = pick;
+                }
+              }
             }
             
-            // Use character's existing enabled state or default
+            // Show boss as selected if ANY variant of this boss base is enabled
             const selectedVariant = selectedByBase[key];
             if (selectedVariant) {
-              enabledByBase[key] = characterBaseEnabled[key] ?? enabledForChar[selectedVariant] ?? defaults[selectedVariant] ?? false;
+              // Check if the selected variant is enabled
+              const selectedVariantEnabled = enabledForChar[selectedVariant] ?? false;
+              
+              // Check if any other variant of this boss base is enabled
+              const anyVariantEnabled = variants.some(variant => enabledForChar[variant.name] === true);
+              
+              // Show as selected if either the selected variant OR any other variant is enabled
+              enabledByBase[key] = selectedVariantEnabled || anyVariantEnabled;
             }
           });
         });
@@ -172,13 +215,17 @@ const BossEditorDialog: React.FC<BossEditorDialogProps> = ({
         setPartySizes(parties);
         setSelectedVariantByBase(selectedByBase);
         setBaseEnabledByBase(enabledByBase);
+        
+        // Debug: Show what's being set for visual selection
+        console.log(`[BossDialog] Setting baseEnabledByBase:`, enabledByBase);
+        console.log(`[BossDialog] Setting selectedVariantByBase:`, selectedByBase);
+        
       } else if (pendingBulkNames) {
         // Bulk characters - find common enabled bosses
         const firstCharName = pendingBulkNames?.[0];
         const enabledForChar = firstCharName ? loadBossEnabledForCharacter(firstCharName) : {};
         const firstCharParties = firstCharName ? loadBossPartySizesForCharacter(firstCharName) : {};
         const firstCharVariants = firstCharName ? loadBossVariantsForCharacter(firstCharName) : {};
-        const firstCharBaseEnabled = firstCharName ? loadBossBaseEnabledForCharacter(firstCharName) : {};
 
         const defaults: Record<string, boolean> = {};
         const parties: Record<string, number> = {};
@@ -205,10 +252,10 @@ const BossEditorDialog: React.FC<BossEditorDialogProps> = ({
               if (pick) nextSelectedByBase[gkey] = pick;
             }
             
-            // Use first character's existing enabled state or default
+            // Only use data from maplehub_boss_enabled localStorage
             const selectedVariant = nextSelectedByBase[gkey];
             if (selectedVariant) {
-              nextBaseEnabledByBase[gkey] = firstCharBaseEnabled[gkey] ?? enabledForChar[selectedVariant] ?? defaults[selectedVariant] ?? false;
+              nextBaseEnabledByBase[gkey] = enabledForChar[selectedVariant] ?? false;
             }
           });
         });
