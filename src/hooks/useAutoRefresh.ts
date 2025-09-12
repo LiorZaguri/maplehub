@@ -59,6 +59,18 @@ export const useAutoRefresh = ({ onRefresh, isEnabled = true }: AutoRefreshConfi
     // If we already refreshed this hour, don't refresh again
     if (lastRefreshHour === currentHour) return false;
 
+    // Check if lastRefreshDone falls within the no-refresh window (21:00 UTC to 18:00 UTC next day)
+    if (autoRefreshState.lastRefreshDone !== null && autoRefreshState.lastRefreshDone !== undefined) {
+      const lastRefreshDate = new Date(autoRefreshState.lastRefreshDone);
+      const lastRefreshHour = lastRefreshDate.getUTCHours();
+      
+      // If lastRefreshDone was between 21:00 UTC and 23:59 UTC, or between 00:00 UTC and 17:59 UTC
+      // (i.e., in the no-refresh window), don't auto-refresh
+      if (lastRefreshHour >= 21 || lastRefreshHour < 18) {
+        return false;
+      }
+    }
+
     // Check if we need to refresh based on lastRefreshDone
     const currentHourStart = new Date();
     currentHourStart.setUTCHours(currentHour, 0, 0, 0);
