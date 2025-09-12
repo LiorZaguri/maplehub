@@ -25,7 +25,7 @@ export const generateSkillsForJob = (jobName: string): HEXASkill[] => {
 
   // Separated skills (not part of main leveling order)
   const separatedSkillTypes: { type: SkillType; maxLevel: number; name: string }[] = [
-    { type: 'Hexa Stat', maxLevel: 2, name: 'Hexa Stat' },     // 11.png = Hexa Stat (in leveling order)
+    { type: 'Hexa Stat', maxLevel: 3, name: 'Hexa Stat' },     // 11.png = Hexa Stat (in leveling order)
     { type: 'Common', maxLevel: 30, name: jobSkills?.commonSkills[0] || 'Sol Janus' },       // sol_janus.png = Sol Janus (not in leveling order)
   ];
 
