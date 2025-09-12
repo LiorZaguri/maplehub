@@ -33,9 +33,9 @@ import {
   performWeeklyReset,
   performMonthlyReset,
   shouldPerformWeeklyReset,
-  shouldPerformMonthlyReset,
-  STORAGE_KEYS
+  shouldPerformMonthlyReset
 } from '../services/bossTrackerService';
+import { STORAGE_KEYS } from '../constants/bossTracker';
 import { getBossMeta, getMaxPartySize } from '@/lib/bossData';
 import { getAllBossLists } from '../utils/bossListUtils';
 

@@ -2,17 +2,8 @@ import { BossProgressByCharacter, BossEnabledByCharacter, BossPartyByCharacter, 
 import { getMostRecentResetTimestamp, getMostRecentMonthlyResetTimestamp } from '../utils/bossUtils';
 import { createObjectStorage, createNumberStorage, createArrayStorage } from '@/utils/storageUtils';
 
-// Storage keys
-export const STORAGE_KEYS = {
-  ROSTER: 'maplehub_roster',
-  BOSS_PROGRESS: 'maplehub_boss_progress',
-  BOSS_ENABLED: 'maplehub_boss_enabled',
-  BOSS_TEMP_DISABLED: 'maplehub_temp_disabled_bosses',
-  BOSS_PARTY: 'maplehub_boss_party_sizes',
-  LAST_RESET_TIMESTAMP: 'maplehub_last_reset_timestamp',
-  LAST_MONTHLY_RESET_TIMESTAMP: 'maplehub_last_monthly_reset_timestamp',
-  CHARACTER_ORDER: 'maplehub_bosstracker_character_order',
-} as const;
+// Import storage keys from constants
+import { STORAGE_KEYS } from '../constants/bossTracker';
 
 // Typed storage instances
 const bossProgressStorage = createObjectStorage<BossProgressByCharacter>(STORAGE_KEYS.BOSS_PROGRESS, {});
