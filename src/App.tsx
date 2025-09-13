@@ -7,6 +7,7 @@ import { lazy, Suspense } from "react";
 import Layout from "@/components/Layout";
 import { ServerStatusNotifier } from "@/components/ServerStatusNotifier";
 import { LayoutProvider } from "@/contexts/LayoutContext";
+import { ScrollToTop } from "@/components/ScrollToTop";
 
 // Lazy load pages for better code splitting
 const Index = lazy(() => import("./pages/Index"));
@@ -45,6 +46,7 @@ const App = () => (
         <Sonner />
         <ServerStatusNotifier />
         <HashRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <ScrollToTop />
           <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/" element={<Index />} />
