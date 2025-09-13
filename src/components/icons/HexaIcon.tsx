@@ -8,7 +8,7 @@ interface HexaIconProps {
 export const HexaIcon: React.FC<HexaIconProps> = ({ className = "h-4 w-4", isActive = false }) => {
     return (
       <img
-        src="/skill-images/fragmentIcon.png"
+        src="./skill-images/fragmentIcon.png"
         alt="Fragment"
         className={className}
         style={{
