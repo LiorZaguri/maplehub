@@ -38,7 +38,7 @@ const NotFound = () => {
               <span>Go Back</span>
             </Button>
             <Button 
-              onClick={() => window.location.href = "/"} 
+              onClick={() => window.location.href = "/maplehub/"} 
               className="btn-hero flex items-center space-x-2"
             >
               <Home className="h-4 w-4" />
