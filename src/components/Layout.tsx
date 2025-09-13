@@ -3,6 +3,7 @@ import { useLayout } from '@/contexts/LayoutContext';
 import Navigation from './Navigation';
 import TopNavbar from './TopNavbar';
 import { LayoutToggle } from './LayoutToggle';
+import { Footer } from './Footer';
 
 interface LayoutProps {
   children: ReactNode;
@@ -44,13 +45,17 @@ const Layout = ({ children }: LayoutProps) => {
   }, [shouldUseSidebar]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       {shouldUseSidebar ? (
         <>
           <Navigation />
-          <main className="flex-1 p-3 pt-20 sm:p-4 sm:pt-20 md:p-6 md:pt-20 lg:p-8 lg:pt-20 xl:ml-64 xl:pt-20">
-            {children}
-          </main>
+          <div className="flex-1 flex flex-col xl:ml-64">
+            <main className="flex-1 p-3 pt-20 sm:p-4 sm:pt-20 md:p-6 md:pt-20 lg:p-8 lg:pt-20">
+              {children}
+            </main>
+            {/* Footer positioned within the main content area for sidebar layout */}
+            <Footer />
+          </div>
         </>
       ) : (
         <>
@@ -58,6 +63,8 @@ const Layout = ({ children }: LayoutProps) => {
           <main className="flex-1 p-3 pt-20 sm:p-4 sm:pt-20 md:p-6 md:pt-20 lg:p-8 lg:pt-20">
             {children}
           </main>
+          {/* Footer positioned normally for topbar layout */}
+          <Footer />
         </>
       )}
       

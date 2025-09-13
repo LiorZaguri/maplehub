@@ -17,6 +17,8 @@ const Mules = lazy(() => import("./pages/Mules"));
 const ServerStatus = lazy(() => import("./pages/ServerStatus"));
 const LiberationCalculator = lazy(() => import("./pages/LiberationCalculator"));
 const FragmentCalculator = lazy(() => import("./pages/FragmentCalculator"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Loading component
@@ -53,6 +55,8 @@ const App = () => (
               <Route path="/server-status" element={<ServerStatus />} />
               <Route path="/liberation-calculator" element={<LiberationCalculator />} />
               <Route path="/fragment-calculator" element={<FragmentCalculator />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+              <Route path="/terms-of-service" element={<TermsOfService />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

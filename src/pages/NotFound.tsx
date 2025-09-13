@@ -2,7 +2,8 @@ import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Home, ArrowLeft } from 'lucide-react';
+import { Home, ArrowLeft, Shield, FileText } from 'lucide-react';
+import { Link } from "react-router-dom";
 
 const NotFound = () => {
   const location = useLocation();
@@ -28,22 +29,48 @@ const NotFound = () => {
             </p>
           </div>
           
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button 
-              onClick={() => window.history.back()} 
-              variant="outline"
-              className="flex items-center space-x-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              <span>Go Back</span>
-            </Button>
-            <Button 
-              onClick={() => window.location.href = "/maplehub/"} 
-              className="btn-hero flex items-center space-x-2"
-            >
-              <Home className="h-4 w-4" />
-              <span>Return Home</span>
-            </Button>
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Button 
+                onClick={() => window.history.back()} 
+                variant="outline"
+                className="flex items-center space-x-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                <span>Go Back</span>
+              </Button>
+              <Button 
+                onClick={() => window.location.href = "/maplehub/"} 
+                className="btn-hero flex items-center space-x-2"
+              >
+                <Home className="h-4 w-4" />
+                <span>Return Home</span>
+              </Button>
+            </div>
+            
+            {/* Legal Pages Links */}
+            <div className="flex gap-2 justify-center">
+              <Link to="/privacy-policy">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center space-x-2"
+                >
+                  <Shield className="h-4 w-4" />
+                  <span>Privacy Policy</span>
+                </Button>
+              </Link>
+              <Link to="/terms-of-service">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center space-x-2"
+                >
+                  <FileText className="h-4 w-4" />
+                  <span>Terms of Service</span>
+                </Button>
+              </Link>
+            </div>
           </div>
         </CardContent>
       </Card>
