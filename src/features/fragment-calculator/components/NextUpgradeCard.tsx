@@ -114,7 +114,7 @@ export const NextUpgradeCard = ({
                     size="sm" 
                     className="w-full justify-between p-2 h-auto"
                   >
-                    <span className="text-sm font-medium">Show all upcoming skills ({upcomingSkills.length})</span>
+                    <span className="text-sm font-medium">Show all ({upcomingSkills.length})</span>
                     {isUpcomingSkillsOpen ? (
                       <ChevronUp className="h-4 w-4" />
                     ) : (
