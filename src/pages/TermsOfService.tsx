@@ -286,7 +286,6 @@ const TermsOfService = () => {
               </p>
               <ul className="list-disc list-inside mt-2 space-y-1">
                 <li>Discord: <a href="https://discord.gg/DykSm9Pd9D" className="text-primary hover:underline">MapleHub Discord Server</a></li>
-                <li>GitHub: <a href="https://github.com/liorzaguri/maplehub" className="text-primary hover:underline">MapleHub Repository</a></li>
               </ul>
             </CardContent>
           </Card>
