@@ -39,6 +39,7 @@ import {
 } from 'lucide-react';
 import LZString from 'lz-string';
 import { ServerStatusIndicator } from './ServerStatusIndicator';
+import { LayoutToggle } from './LayoutToggle';
 
 const Navigation = () => {
   const location = useLocation();
@@ -681,6 +682,7 @@ const Navigation = () => {
           </Dialog>
         </div>
 
+
         {/* Unified Google Drive Button */}
         <Dialog open={driveDialogOpen} onOpenChange={async (open) => {
           setDriveDialogOpen(open);
@@ -872,6 +874,11 @@ const Navigation = () => {
             Buy me a coffee
           </Button>
         </a>
+        </div>
+
+        {/* Server Status Indicator - Integrated into sidebar flow */}
+        <div className="hidden xl:block mt-auto">
+          <ServerStatusIndicator />
         </div>
     </div>
   ), [navItems, location.pathname, setIsOpen, toolsExpanded, handleExport, handleImport, importDialogOpen, importData, exportDialogOpen, exportData, copyExportData, isImporting, handleDownloadFromDrive, isGDriveLoading, driveDialogOpen, customFilename, saveCount, isAuthenticated, isAuthenticating, handleGoogleDriveAuth, loadDriveFiles, handleSaveNewBackup, handleLoadBackup, handleDeleteBackup, handleSignOut]);
@@ -1374,6 +1381,11 @@ const Navigation = () => {
             </SheetContent>
           </Sheet>
         </div>
+      </div>
+
+      {/* Layout Toggle - Floating in top right, only for sidebar layout */}
+      <div className="fixed top-4 right-4 z-50 hidden md:block">
+        <LayoutToggle />
       </div>
 
     </>

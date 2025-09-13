@@ -2,6 +2,29 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Prevent layout shifts from dropdowns - only for topbar layout */
+html {
+  scrollbar-gutter: stable;
+}
+
+/* Only apply layout shift prevention when topbar is active */
+body.topbar-layout {
+  overflow-x: hidden;
+  width: 100%;
+  position: relative;
+}
+
+/* Prevent layout shifts from dropdown menus in topbar */
+body.topbar-layout [data-radix-popper-content-wrapper] {
+  position: fixed !important;
+}
+
+/* Ensure main content doesn't shift in topbar */
+body.topbar-layout main {
+  width: 100%;
+  position: relative;
+}
+
 /* MapleHub Design System - Gaming aesthetic with vibrant colors */
 
 @layer base {
