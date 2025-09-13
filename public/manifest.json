@@ -1,7 +1,7 @@
 {
   "name": "MapleHub",
   "short_name": "MapleHub",
-  "description": "A comprehensive MapleStory character and boss tracking application",
+  "description": "Free MapleStory toolkit featuring character management, boss tracking, liberation & fragment calculators, and live server status monitoring.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0a0a0a",
@@ -16,8 +16,8 @@
     },
     {
       "src": "favicon.ico",
-      "sizes": "32x32",
-      "type": "image/x-icon"
+      "sizes": "73x74",
+      "type": "image/png"
     }
   ],
   "categories": ["games", "productivity"],
