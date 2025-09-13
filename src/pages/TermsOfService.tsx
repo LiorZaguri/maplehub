@@ -56,8 +56,6 @@ const TermsOfService = () => {
                 <li>Boss tracking and completion monitoring</li>
                 <li>Task management and progress tracking</li>
                 <li>Liberation and Fragment calculators</li>
-                <li>VI (V Matrix) tracking</li>
-                <li>Mule character management</li>
                 <li>Live server status monitoring</li>
                 <li>Data backup and restore functionality</li>
               </ul>
