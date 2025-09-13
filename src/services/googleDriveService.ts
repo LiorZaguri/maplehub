@@ -149,13 +149,21 @@ class GoogleDriveService {
         if (!initialized) return false;
       }
 
-      // Check if we already have a valid token
+      // First, try to restore token from localStorage
+      const savedToken = this.getStoredToken();
+      if (savedToken && this.isTokenValid(savedToken)) {
+        this.gapi.client.setToken(savedToken);
+        return true;
+      }
+
+      // Check if we already have a valid token in memory
       const existingToken = this.gapi.client.getToken();
       if (existingToken && existingToken.access_token) {
         // Check if token is still valid (not expired)
-        const now = Date.now();
-        if (existingToken.expires_at && now < existingToken.expires_at) {
-          return true; // Token is still valid
+        if (this.isTokenValid(existingToken)) {
+          // Store the valid token
+          this.storeToken(existingToken);
+          return true;
         }
       }
 
@@ -163,12 +171,15 @@ class GoogleDriveService {
         this.tokenClient.callback = (response: any) => {
           if (response.error) {
             console.error('Authentication failed:', response.error);
+            this.clearStoredToken();
             resolve(false);
             return;
           }
           
           // Set the access token for gapi
           this.gapi.client.setToken(response);
+          // Store the token for persistence
+          this.storeToken(response);
           resolve(true);
         };
 
@@ -177,6 +188,7 @@ class GoogleDriveService {
       });
     } catch (error) {
       console.error('Authentication failed:', error);
+      this.clearStoredToken();
       return false;
     }
   }
@@ -189,20 +201,116 @@ class GoogleDriveService {
         if (!initialized) return false;
       }
 
-      // Check if we already have a valid token
+      // First, try to restore token from localStorage
+      const savedToken = this.getStoredToken();
+      console.log('Saved token from localStorage:', savedToken ? 'Found' : 'Not found');
+      
+      if (savedToken && this.isTokenValid(savedToken)) {
+        console.log('Restoring valid token from localStorage');
+        this.gapi.client.setToken(savedToken);
+        return true;
+      }
+
+      // Check if we already have a valid token in memory
       const existingToken = this.gapi.client.getToken();
+      console.log('Existing token in memory:', existingToken ? 'Found' : 'Not found');
+      
       if (existingToken && existingToken.access_token) {
         // Check if token is still valid (not expired)
-        const now = Date.now();
-        if (existingToken.expires_at && now < existingToken.expires_at) {
-          return true; // Token is still valid
+        if (this.isTokenValid(existingToken)) {
+          console.log('Storing valid token from memory to localStorage');
+          // Store the valid token
+          this.storeToken(existingToken);
+          return true;
+        } else {
+          console.log('Token in memory is expired');
         }
       }
 
+      console.log('No valid token found');
       return false; // No valid token found
     } catch (error) {
+      console.error('isAuthenticated error:', error);
       return false;
     }
+  }
+
+  // Helper methods for token persistence
+  private getStoredToken(): any {
+    try {
+      const stored = localStorage.getItem('google-drive-token');
+      return stored ? JSON.parse(stored) : null;
+    } catch (error) {
+      console.error('Failed to parse stored token:', error);
+      return null;
+    }
+  }
+
+  private storeToken(token: any): void {
+    try {
+      // Add issued_at timestamp if not present
+      const tokenToStore = {
+        ...token,
+        issued_at: token.issued_at || Date.now()
+      };
+      localStorage.setItem('google-drive-token', JSON.stringify(tokenToStore));
+    } catch (error) {
+      console.error('Failed to store token:', error);
+    }
+  }
+
+  private clearStoredToken(): void {
+    try {
+      localStorage.removeItem('google-drive-token');
+    } catch (error) {
+      console.error('Failed to clear stored token:', error);
+    }
+  }
+
+  private isTokenValid(token: any): boolean {
+    if (!token || !token.access_token) {
+      console.log('Token validation failed: no token or access_token');
+      return false;
+    }
+    
+    // Check if token is still valid (not expired)
+    const now = Date.now();
+    console.log('Token validation - now:', new Date(now).toISOString());
+    console.log('Token validation - token:', {
+      expires_at: token.expires_at ? new Date(token.expires_at).toISOString() : 'none',
+      expires_in: token.expires_in,
+      issued_at: token.issued_at ? new Date(token.issued_at).toISOString() : 'none'
+    });
+    
+    // Handle both expires_at (timestamp) and expires_in (seconds from now)
+    if (token.expires_at && now < token.expires_at) {
+      console.log('Token valid: expires_at check passed');
+      return true;
+    }
+    
+    // If we have expires_in, calculate if it's still valid
+    if (token.expires_in && token.issued_at) {
+      const expirationTime = token.issued_at + (token.expires_in * 1000);
+      console.log('Token validation - calculated expiration:', new Date(expirationTime).toISOString());
+      const isValid = now < expirationTime;
+      console.log('Token valid:', isValid);
+      return isValid;
+    }
+    
+    // If we only have expires_in without issued_at, assume it was issued recently
+    // This is a fallback for tokens that might not have issued_at
+    if (token.expires_in) {
+      // Assume token was issued within the last hour if no issued_at
+      const assumedIssuedAt = now - (token.expires_in * 1000);
+      const expirationTime = assumedIssuedAt + (token.expires_in * 1000);
+      console.log('Token validation - assumed expiration:', new Date(expirationTime).toISOString());
+      const isValid = now < expirationTime;
+      console.log('Token valid (assumed):', isValid);
+      return isValid;
+    }
+    
+    console.log('Token validation failed: no expiration info');
+    return false;
   }
 
   async uploadFile(data: string, filename: string): Promise<string | null> {
@@ -335,6 +443,8 @@ class GoogleDriveService {
           this.gapi.client.setToken('');
         }
       }
+      // Clear stored token
+      this.clearStoredToken();
     } catch (error) {
       console.error('Sign out failed:', error);
     }

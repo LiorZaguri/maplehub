@@ -24,7 +24,6 @@ import {
   Users,
   Sword,
   Menu,
-  TrendingUp,
   Server,
   CheckSquare,
   Coffee,
@@ -36,7 +35,7 @@ import {
   Download,
   Upload,
   Cloud,
-  CloudDownload
+  Info,
 } from 'lucide-react';
 import LZString from 'lz-string';
 import { ServerStatusIndicator } from './ServerStatusIndicator';
@@ -50,7 +49,6 @@ const Navigation = () => {
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [exportData, setExportData] = useState('');
   const [isImporting, setIsImporting] = useState(false);
-  const [fileSelectorOpen, setFileSelectorOpen] = useState(false);
   const [driveDialogOpen, setDriveDialogOpen] = useState(false);
   const [customFilename, setCustomFilename] = useState('');
   const [saveCount, setSaveCount] = useState(0);
@@ -58,20 +56,35 @@ const Navigation = () => {
   const [isLoadingFiles, setIsLoadingFiles] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [exportInfoExpanded, setExportInfoExpanded] = useState(false);
+  const [importInfoExpanded, setImportInfoExpanded] = useState(false);
   
   const { uploadToDrive, downloadFromDrive, authenticate, isLoading: isGDriveLoading } = useGoogleDrive();
+
+  // Helper function to update authentication state
+  const updateAuthenticationState = (authenticated: boolean) => {
+    setIsAuthenticated(authenticated);
+  };
 
   // Check for existing authentication on component mount
   useEffect(() => {
     const checkExistingAuth = async () => {
       try {
+        // Clean up old authentication key if it exists
+        localStorage.removeItem('google-drive-authenticated');
+        
         const isAlreadyAuthenticated = await googleDriveService.isAuthenticated();
+        console.log('Google Drive authentication check result:', isAlreadyAuthenticated);
+        updateAuthenticationState(isAlreadyAuthenticated);
+        
+        // If authenticated, load the drive files
         if (isAlreadyAuthenticated) {
-          setIsAuthenticated(true);
+          await loadDriveFiles();
         }
       } catch (error) {
+        console.error('Authentication check failed:', error);
         // If check fails, user is not authenticated
-        setIsAuthenticated(false);
+        updateAuthenticationState(false);
       }
     };
 
@@ -140,11 +153,6 @@ const Navigation = () => {
     });
   };
 
-  // Upload to Google Drive
-  const handleUploadToDrive = async () => {
-    const filename = `maplehub-backup-${new Date().toISOString().split('T')[0]}.json`;
-    await uploadToDrive(exportData, filename);
-  };
 
   // Download from Google Drive
   const handleDownloadFromDrive = async (fileId: string) => {
@@ -162,13 +170,14 @@ const Navigation = () => {
       // Check if user is already authenticated (this will check existing tokens silently)
       const isAlreadyAuthenticated = await authenticate();
       if (isAlreadyAuthenticated) {
-        setIsAuthenticated(true);
+        updateAuthenticationState(true);
         await loadDriveFiles();
         toast({
           title: "Connected to Google Drive",
           description: "You can now manage your backups.",
         });
       } else {
+        updateAuthenticationState(false);
         toast({
           title: "Authentication failed",
           description: "Could not connect to Google Drive. Please try again.",
@@ -312,7 +321,7 @@ const Navigation = () => {
   const handleSignOut = async () => {
     try {
       await googleDriveService.signOut();
-      setIsAuthenticated(false);
+      updateAuthenticationState(false);
       setDriveFiles([]);
       setSaveCount(0);
       toast({
@@ -401,12 +410,21 @@ const Navigation = () => {
 
   const NavContent = useMemo(() => (
     <div className="flex flex-col h-full">
-      <div className="px-4 py-2 mb-4">
+      <div className="px-4 pt-6 mb-6">
         <div className="flex items-center space-x-2">
-          <TrendingUp className="h-6 w-6 text-primary" />
-          <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-            MapleHub
-          </h1>
+          <img 
+            src="./logo_leaf.png" 
+            alt="MapleHub Logo" 
+            className="h-8 w-8 object-contain logo-themed"
+          />
+          <div>
+            <h1 className="logo-text">
+              MapleHub
+            </h1>
+            <p className="text-xs text-muted-foreground mt-1">
+              Your Maplestory Companion
+            </p>
+          </div>
         </div>
       </div>
 
@@ -536,15 +554,32 @@ const Navigation = () => {
                   Copy the compressed data below and share it with others. They can import it using the Import feature.
                 </DialogDescription>
               </DialogHeader>
-              <div className="mb-4 p-4 bg-muted/50 rounded-lg border">
-                <h4 className="font-semibold text-base mb-3">What will be exported:</h4>
-                <ul className="text-sm text-muted-foreground space-y-2">
-                  <li>• <strong>Character Roster:</strong> All character info, levels, classes, and settings</li>
-                  <li>• <strong>Boss Tracker:</strong> Progress, enabled bosses, party sizes, and reset timestamps</li>
-                  <li>• <strong>Task Tracker:</strong> Task progress, enabled tasks, presets, and UI preferences</li>
-                  <li>• <strong>Calculators:</strong> Fragment and Liberation calculator data and selections</li>
-                  <li>• <strong>UI Settings:</strong> Navigation state, custom presets, and preferences</li>
-                </ul>
+              <div className="mb-2 border rounded-lg">
+                <button
+                  onClick={() => setExportInfoExpanded(!exportInfoExpanded)}
+                  className="w-full p-4 text-left hover:bg-muted/50 transition-colors flex items-center justify-between"
+                >
+                  <div className="flex items-center space-x-2">
+                    <Info className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold text-base">What will be exported</h4>
+                  </div>
+                  {exportInfoExpanded ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                </button>
+                {exportInfoExpanded && (
+                  <div className="px-4 pb-4">
+                    <ul className="text-sm text-muted-foreground space-y-2">
+                      <li>• <strong>Character Roster:</strong> All character info, levels, classes, and settings</li>
+                      <li>• <strong>Boss Tracker:</strong> Progress, enabled bosses, party sizes, and reset timestamps</li>
+                      <li>• <strong>Task Tracker:</strong> Task progress, enabled tasks, presets, and UI preferences</li>
+                      <li>• <strong>Calculators:</strong> Fragment and Liberation calculator data and selections</li>
+                      <li>• <strong>UI Settings:</strong> Navigation state, custom presets, and preferences</li>
+                    </ul>
+                  </div>
+                )}
               </div>
               <div className="grid gap-4 py-4">
                 <div>
@@ -552,7 +587,7 @@ const Navigation = () => {
                   <Textarea
                     value={exportData}
                     readOnly
-                    className="min-h-[200px] font-mono text-xs"
+                    className="min-h-[200px] font-mono text-xs scrollbar-hide"
                     placeholder="Generating export data..."
                   />
                 </div>
@@ -563,20 +598,10 @@ const Navigation = () => {
                   <Button variant="outline" onClick={() => setExportDialogOpen(false)}>
                     Close
                   </Button>
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
-                      onClick={handleUploadToDrive}
-                      disabled={isGDriveLoading}
-                    >
-                      <Cloud className="h-4 w-4 mr-2" />
-                      {isGDriveLoading ? "Uploading..." : "Save to Drive"}
-                    </Button>
-                    <Button onClick={copyExportData}>
-                      <Download className="h-4 w-4 mr-2" />
-                      Copy to Clipboard
-                    </Button>
-                  </div>
+                  <Button onClick={copyExportData}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Copy to Clipboard
+                  </Button>
                 </div>
               </div>
             </DialogContent>
@@ -592,33 +617,53 @@ const Navigation = () => {
                 <span>Import</span>
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-[600px]">
               <DialogHeader>
                 <DialogTitle>Import Data</DialogTitle>
                 <DialogDescription>
                   Paste your exported data below (compressed or base64 code) and click Import to restore your settings.
                 </DialogDescription>
               </DialogHeader>
-              <div className="mb-4 p-4 bg-muted/50 rounded-lg border">
-                <h4 className="font-semibold text-base mb-3">What will be imported:</h4>
-                <ul className="text-sm text-muted-foreground space-y-2">
-                  <li>• <strong>Character Roster:</strong> All character info, levels, classes, and settings</li>
-                  <li>• <strong>Boss Tracker:</strong> Progress, enabled bosses, party sizes, and reset timestamps</li>
-                  <li>• <strong>Task Tracker:</strong> Task progress, enabled tasks, presets, and UI preferences</li>
-                  <li>• <strong>Calculators:</strong> Fragment and Liberation calculator data and selections</li>
-                  <li>• <strong>UI Settings:</strong> Navigation state, custom presets, and preferences</li>
-                </ul>
-                <p className="text-sm text-amber-600 mt-3 font-medium">
-                  ⚠️ This will replace all your current data. The page will refresh after import.
-                </p>
+              <div className="mb-2 border rounded-lg">
+                <button
+                  onClick={() => setImportInfoExpanded(!importInfoExpanded)}
+                  className="w-full p-4 text-left hover:bg-muted/50 transition-colors flex items-center justify-between"
+                >
+                  <div className="flex items-center space-x-2">
+                    <Info className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold text-base">What will be imported</h4>
+                  </div>
+                  {importInfoExpanded ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                </button>
+                {importInfoExpanded && (
+                  <div className="px-4 pb-4">
+                    <ul className="text-sm text-muted-foreground space-y-2">
+                      <li>• <strong>Character Roster:</strong> All character info, levels, classes, and settings</li>
+                      <li>• <strong>Boss Tracker:</strong> Progress, enabled bosses, party sizes, and reset timestamps</li>
+                      <li>• <strong>Task Tracker:</strong> Task progress, enabled tasks, presets, and UI preferences</li>
+                      <li>• <strong>Calculators:</strong> Fragment and Liberation calculator data and selections</li>
+                      <li>• <strong>UI Settings:</strong> Navigation state, custom presets, and preferences</li>
+                    </ul>
+                    <p className="text-sm text-amber-600 mt-3 font-medium">
+                      ⚠️ This will replace all your current data. The page will refresh after import.
+                    </p>
+                  </div>
+                )}
               </div>
               <div className="grid gap-4 py-4">
-                <Textarea
-                  placeholder="Paste your exported data here..."
-                  value={importData}
-                  onChange={(e) => setImportData(e.target.value)}
-                  className="min-h-[200px]"
-                />
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Import Data</label>
+                  <Textarea
+                    placeholder="Paste your exported data here..."
+                    value={importData}
+                    onChange={(e) => setImportData(e.target.value)}
+                    className="min-h-[200px] scrollbar-hide"
+                  />
+                </div>
                 <div className="flex justify-between gap-2">
                   <Button 
                     variant="outline" 
@@ -627,19 +672,9 @@ const Navigation = () => {
                   >
                     Cancel
                   </Button>
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
-                      onClick={() => setFileSelectorOpen(true)}
-                      disabled={isGDriveLoading}
-                    >
-                      <CloudDownload className="h-4 w-4 mr-2" />
-                      {isGDriveLoading ? "Loading..." : "Load from Drive"}
-                    </Button>
-                    <Button onClick={handleImport} disabled={isImporting}>
-                      {isImporting ? "Importing..." : "Import"}
-                    </Button>
-                  </div>
+                  <Button onClick={handleImport} disabled={isImporting}>
+                    {isImporting ? "Importing..." : "Import"}
+                  </Button>
                 </div>
               </div>
             </DialogContent>
@@ -653,13 +688,13 @@ const Navigation = () => {
             // Check if user is already authenticated silently (no popup)
             try {
               const isAlreadyAuthenticated = await googleDriveService.isAuthenticated();
+              updateAuthenticationState(isAlreadyAuthenticated);
               if (isAlreadyAuthenticated) {
-                setIsAuthenticated(true);
                 await loadDriveFiles();
               }
             } catch (error) {
               // If check fails, show login prompt
-              setIsAuthenticated(false);
+              updateAuthenticationState(false);
             }
           } else {
             // Only reset authenticating state when dialog closes, keep authenticated state
@@ -839,7 +874,7 @@ const Navigation = () => {
         </a>
         </div>
     </div>
-  ), [navItems, location.pathname, setIsOpen, toolsExpanded, handleExport, handleImport, importDialogOpen, importData, exportDialogOpen, exportData, copyExportData, isImporting, handleUploadToDrive, handleDownloadFromDrive, isGDriveLoading, driveDialogOpen, customFilename, saveCount, isAuthenticated, isAuthenticating, handleGoogleDriveAuth, loadDriveFiles, handleSaveNewBackup, handleLoadBackup, handleDeleteBackup, handleSignOut]);
+  ), [navItems, location.pathname, setIsOpen, toolsExpanded, handleExport, handleImport, importDialogOpen, importData, exportDialogOpen, exportData, copyExportData, isImporting, handleDownloadFromDrive, isGDriveLoading, driveDialogOpen, customFilename, saveCount, isAuthenticated, isAuthenticating, handleGoogleDriveAuth, loadDriveFiles, handleSaveNewBackup, handleLoadBackup, handleDeleteBackup, handleSignOut]);
 
   return (
     <>
@@ -852,8 +887,12 @@ const Navigation = () => {
       <div className="xl:hidden fixed top-0 left-0 right-0 z-50 bg-card border-b border-border h-20">
         <div className="flex items-center justify-between p-3 sm:p-4 h-full">
           <div className="flex items-center space-x-2">
-            <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-            <h1 className="text-base sm:text-lg font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+            <img 
+              src="./logo_leaf.png" 
+              alt="MapleHub Logo" 
+              className="h-5 w-5 sm:h-6 sm:w-6 object-contain"
+            />
+            <h1 className="logo-text">
               MapleHub
             </h1>
           </div>
@@ -865,13 +904,22 @@ const Navigation = () => {
             </SheetTrigger>
             <SheetContent side="left" className="w-64 p-0 bg-card">
               <div className="flex flex-col h-full">
-                <div className="px-4 py-2 mb-4">
-                  <div className="flex items-center space-x-2">
-                    <TrendingUp className="h-6 w-6 text-primary" />
-                    <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                      MapleHub
-                    </h1>
-                  </div>
+                <div className="px-4 pt-6 mb-6">
+                    <div className="flex items-center space-x-2">
+                      <img 
+                        src="./logo_leaf.png" 
+                        alt="MapleHub Logo" 
+                        className="h-8 w-8 object-contain logo-themed"
+                      />
+                      <div>
+                        <h1 className="logo-text">
+                          MapleHub
+                        </h1>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Your Maplestory Companion
+                        </p>
+                      </div>
+                    </div>
                 </div>
                 <div className="sr-only">
                   <h2>Navigation Menu</h2>
@@ -1003,15 +1051,32 @@ const Navigation = () => {
                             Copy the compressed data below and share it with others. They can import it using the Import feature.
                           </DialogDescription>
                         </DialogHeader>
-                        <div className="mb-4 p-4 bg-muted/50 rounded-lg border">
-                          <h4 className="font-semibold text-base mb-3">What will be exported:</h4>
-                          <ul className="text-sm text-muted-foreground space-y-2">
-                            <li>• <strong>Character Roster:</strong> All character info, levels, classes, and settings</li>
-                            <li>• <strong>Boss Tracker:</strong> Progress, enabled bosses, party sizes, and reset timestamps</li>
-                            <li>• <strong>Task Tracker:</strong> Task progress, enabled tasks, presets, and UI preferences</li>
-                            <li>• <strong>Calculators:</strong> Fragment and Liberation calculator data and selections</li>
-                            <li>• <strong>UI Settings:</strong> Navigation state, custom presets, and preferences</li>
-                          </ul>
+                        <div className="mb-2 border rounded-lg">
+                          <button
+                            onClick={() => setExportInfoExpanded(!exportInfoExpanded)}
+                            className="w-full p-4 text-left hover:bg-muted/50 transition-colors flex items-center justify-between"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <Info className="h-4 w-4 text-primary" />
+                              <h4 className="font-semibold text-base">What will be exported</h4>
+                            </div>
+                            {exportInfoExpanded ? (
+                              <ChevronUp className="h-4 w-4" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4" />
+                            )}
+                          </button>
+                          {exportInfoExpanded && (
+                            <div className="px-4 pb-4">
+                              <ul className="text-sm text-muted-foreground space-y-2">
+                                <li>• <strong>Character Roster:</strong> All character info, levels, classes, and settings</li>
+                                <li>• <strong>Boss Tracker:</strong> Progress, enabled bosses, party sizes, and reset timestamps</li>
+                                <li>• <strong>Task Tracker:</strong> Task progress, enabled tasks, presets, and UI preferences</li>
+                                <li>• <strong>Calculators:</strong> Fragment and Liberation calculator data and selections</li>
+                                <li>• <strong>UI Settings:</strong> Navigation state, custom presets, and preferences</li>
+                              </ul>
+                            </div>
+                          )}
                         </div>
                         <div className="grid gap-4 py-4">
                           <div>
@@ -1019,7 +1084,7 @@ const Navigation = () => {
                             <Textarea
                               value={exportData}
                               readOnly
-                              className="min-h-[200px] font-mono text-xs"
+                              className="min-h-[200px] font-mono text-xs scrollbar-hide"
                               placeholder="Generating export data..."
                             />
                           </div>
@@ -1030,20 +1095,10 @@ const Navigation = () => {
                             <Button variant="outline" onClick={() => setExportDialogOpen(false)}>
                               Close
                             </Button>
-                            <div className="flex gap-2">
-                              <Button 
-                                variant="outline" 
-                                onClick={handleUploadToDrive}
-                                disabled={isGDriveLoading}
-                              >
-                                <Cloud className="h-4 w-4 mr-2" />
-                                {isGDriveLoading ? "Uploading..." : "Save to Drive"}
-                              </Button>
-                              <Button onClick={copyExportData}>
-                                <Download className="h-4 w-4 mr-2" />
-                                Copy to Clipboard
-                              </Button>
-                            </div>
+                            <Button onClick={copyExportData}>
+                              <Download className="h-4 w-4 mr-2" />
+                              Copy to Clipboard
+                            </Button>
                           </div>
                         </div>
                       </DialogContent>
@@ -1059,33 +1114,53 @@ const Navigation = () => {
                           <span>Import</span>
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="sm:max-w-[425px]">
+                      <DialogContent className="sm:max-w-[600px]">
                         <DialogHeader>
                           <DialogTitle>Import Data</DialogTitle>
                           <DialogDescription>
                             Paste your exported data below (compressed or base64 code) and click Import to restore your settings.
                           </DialogDescription>
                         </DialogHeader>
-                        <div className="mb-4 p-4 bg-muted/50 rounded-lg border">
-                          <h4 className="font-semibold text-base mb-3">What will be imported:</h4>
-                          <ul className="text-sm text-muted-foreground space-y-2">
-                            <li>• <strong>Character Roster:</strong> All character info, levels, classes, and settings</li>
-                            <li>• <strong>Boss Tracker:</strong> Progress, enabled bosses, party sizes, and reset timestamps</li>
-                            <li>• <strong>Task Tracker:</strong> Task progress, enabled tasks, presets, and UI preferences</li>
-                            <li>• <strong>Calculators:</strong> Fragment and Liberation calculator data and selections</li>
-                            <li>• <strong>UI Settings:</strong> Navigation state, custom presets, and preferences</li>
-                          </ul>
-                          <p className="text-sm text-amber-600 mt-3 font-medium">
-                            ⚠️ This will replace all your current data. The page will refresh after import.
-                          </p>
+                        <div className="mb-2 border rounded-lg">
+                          <button
+                            onClick={() => setImportInfoExpanded(!importInfoExpanded)}
+                            className="w-full p-4 text-left hover:bg-muted/50 transition-colors flex items-center justify-between"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <Info className="h-4 w-4 text-primary" />
+                              <h4 className="font-semibold text-base">What will be imported</h4>
+                            </div>
+                            {importInfoExpanded ? (
+                              <ChevronUp className="h-4 w-4" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4" />
+                            )}
+                          </button>
+                          {importInfoExpanded && (
+                            <div className="px-4 pb-4">
+                              <ul className="text-sm text-muted-foreground space-y-2">
+                                <li>• <strong>Character Roster:</strong> All character info, levels, classes, and settings</li>
+                                <li>• <strong>Boss Tracker:</strong> Progress, enabled bosses, party sizes, and reset timestamps</li>
+                                <li>• <strong>Task Tracker:</strong> Task progress, enabled tasks, presets, and UI preferences</li>
+                                <li>• <strong>Calculators:</strong> Fragment and Liberation calculator data and selections</li>
+                                <li>• <strong>UI Settings:</strong> Navigation state, custom presets, and preferences</li>
+                              </ul>
+                              <p className="text-sm text-amber-600 mt-3 font-medium">
+                                ⚠️ This will replace all your current data. The page will refresh after import.
+                              </p>
+                            </div>
+                          )}
                         </div>
                         <div className="grid gap-4 py-4">
-                          <Textarea
-                            placeholder="Paste your exported data here..."
-                            value={importData}
-                            onChange={(e) => setImportData(e.target.value)}
-                            className="min-h-[200px]"
-                          />
+                          <div>
+                            <label className="text-sm font-medium mb-2 block">Import Data</label>
+                            <Textarea
+                              placeholder="Paste your exported data here..."
+                              value={importData}
+                              onChange={(e) => setImportData(e.target.value)}
+                              className="min-h-[200px] scrollbar-hide"
+                            />
+                          </div>
                           <div className="flex justify-between gap-2">
                             <Button 
                               variant="outline" 
@@ -1094,19 +1169,9 @@ const Navigation = () => {
                             >
                               Cancel
                             </Button>
-                            <div className="flex gap-2">
-                              <Button 
-                                variant="outline" 
-                                onClick={() => setFileSelectorOpen(true)}
-                                disabled={isGDriveLoading}
-                              >
-                                <CloudDownload className="h-4 w-4 mr-2" />
-                                {isGDriveLoading ? "Loading..." : "Load from Drive"}
-                              </Button>
-                              <Button onClick={handleImport} disabled={isImporting}>
-                                {isImporting ? "Importing..." : "Import"}
-                              </Button>
-                            </div>
+                            <Button onClick={handleImport} disabled={isImporting}>
+                              {isImporting ? "Importing..." : "Import"}
+                            </Button>
                           </div>
                         </div>
                       </DialogContent>
@@ -1121,13 +1186,13 @@ const Navigation = () => {
                     // Check if user is already authenticated silently (no popup)
                     try {
                       const isAlreadyAuthenticated = await googleDriveService.isAuthenticated();
+                      updateAuthenticationState(isAlreadyAuthenticated);
                       if (isAlreadyAuthenticated) {
-                        setIsAuthenticated(true);
                         await loadDriveFiles();
                       }
                     } catch (error) {
                       // If check fails, show login prompt
-                      setIsAuthenticated(false);
+                      updateAuthenticationState(false);
                     }
                   } else {
                     // Only reset authenticating state when dialog closes, keep authenticated state
