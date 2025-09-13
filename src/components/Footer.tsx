@@ -8,7 +8,7 @@ export const Footer = () => {
       <div className="container mx-auto px-4 py-6">
         <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
           {/* Left side - Brand */}
-          <div className="flex items-center space-x-2">
+          <Link to="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
             <img 
               src="./logo_leaf.png" 
               alt="MapleHub Logo" 
@@ -18,7 +18,7 @@ export const Footer = () => {
               <p className="text-sm font-medium">MapleHub</p>
               <p className="text-xs text-muted-foreground">Your MapleStory Companion</p>
             </div>
-          </div>
+          </Link>
 
           {/* Center - Legal Links */}
           <div className="flex items-center space-x-6">

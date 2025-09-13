@@ -1,10 +1,12 @@
+import { Link } from 'react-router-dom';
+
 interface TopNavbarHeaderProps {
   className?: string;
 }
 
 export const TopNavbarHeader = ({ className = '' }: TopNavbarHeaderProps) => {
   return (
-    <div className={`flex items-center space-x-2 sm:space-x-3 justify-start ${className}`}>
+    <Link to="/" className={`flex items-center space-x-2 sm:space-x-3 justify-start hover:opacity-80 transition-opacity ${className}`}>
       <img 
         src="./logo_leaf.png" 
         alt="MapleHub Logo" 
@@ -15,6 +17,6 @@ export const TopNavbarHeader = ({ className = '' }: TopNavbarHeaderProps) => {
           MapleHub
         </h1>
       </div>
-    </div>
+    </Link>
   );
 };

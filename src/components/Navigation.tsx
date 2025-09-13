@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Menu } from 'lucide-react';
@@ -72,7 +73,7 @@ const Navigation = () => {
       {/* Mobile Navigation */}
       <div className="xl:hidden fixed top-0 left-0 right-0 z-50 bg-card border-b border-border h-20">
         <div className="flex items-center justify-between p-3 sm:p-4 h-full">
-          <div className="flex items-center space-x-2">
+          <Link to="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
             <img 
               src="./logo_leaf.png" 
               alt="MapleHub Logo" 
@@ -81,7 +82,7 @@ const Navigation = () => {
             <h1 className="logo-text">
               MapleHub
             </h1>
-          </div>
+          </Link>
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="sm" className="p-2">

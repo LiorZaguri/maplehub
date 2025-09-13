@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 interface NavigationHeaderProps {
   className?: string;
   showSubtitle?: boolean;
@@ -6,7 +8,7 @@ interface NavigationHeaderProps {
 export const NavigationHeader = ({ className = '', showSubtitle = true }: NavigationHeaderProps) => {
   return (
     <div className={`px-4 pt-6 mb-6 ${className}`}>
-      <div className="flex items-center space-x-2">
+      <Link to="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
         <img 
           src="./logo_leaf.png" 
           alt="MapleHub Logo" 
@@ -22,7 +24,7 @@ export const NavigationHeader = ({ className = '', showSubtitle = true }: Naviga
             </p>
           )}
         </div>
-      </div>
+      </Link>
     </div>
   );
 };
