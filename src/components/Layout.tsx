@@ -48,7 +48,7 @@ const Layout = ({ children }: LayoutProps) => {
       {shouldUseSidebar ? (
         <>
           <Navigation />
-          <main className="flex-1 p-3 pt-16 sm:p-4 sm:pt-16 md:p-6 md:pt-32 lg:p-8 lg:pt-20 xl:ml-64 xl:pt-20">
+          <main className="flex-1 p-3 pt-20 sm:p-4 sm:pt-20 md:p-6 md:pt-20 lg:p-8 lg:pt-20 xl:ml-64 xl:pt-20">
             {children}
           </main>
         </>
