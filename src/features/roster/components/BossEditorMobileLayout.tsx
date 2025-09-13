@@ -84,12 +84,12 @@ const BossEditorMobileLayout: React.FC<BossEditorMobileLayoutProps> = ({
   return (
     <div className="lg:hidden flex flex-col min-h-0 flex-1">
       {/* Mobile Header */}
-      <div className="bg-background/95 backdrop-blur-sm border border-border rounded-lg p-3 mb-4 flex-shrink-0">
+      <div className="bg-background/95 backdrop-blur-sm border border-border rounded-lg p-2 sm:p-3 mb-2 sm:mb-4 flex-shrink-0">
         {/* Compact Navigation and Presets in one row */}
-        <div className="flex items-center justify-between gap-2 mb-3">
+        <div className="flex items-center justify-between gap-1 sm:gap-2 mb-2 sm:mb-3">
           {/* Tab Selector */}
           <Select value={activeTab} onValueChange={(value: BossCategory) => setActiveTab(value)}>
-            <SelectTrigger className="w-32 h-8 text-xs" aria-label="Select boss category">
+            <SelectTrigger className="w-24 xs:w-28 sm:w-32 h-8 text-xs" aria-label="Select boss category">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -116,7 +116,7 @@ const BossEditorMobileLayout: React.FC<BossEditorMobileLayoutProps> = ({
 
           {/* Preset Selector */}
           <Select value={selectedPreset || ''} onValueChange={(value) => value && applyPreset(value)}>
-            <SelectTrigger className="flex-1 h-8 text-xs" aria-label="Choose preset">
+            <SelectTrigger className="flex-1 h-8 text-xs min-w-0" aria-label="Choose preset">
               <SelectValue placeholder="Choose preset..." />
             </SelectTrigger>
             <SelectContent>
@@ -243,16 +243,16 @@ const BossEditorMobileLayout: React.FC<BossEditorMobileLayoutProps> = ({
       {/* Mobile Main Content - Flexible height */}
       <div className="flex-1 min-h-0 flex flex-col">
         {/* Search Bar */}
-        <div className="mb-4 flex-shrink-0">
+        <div className="mb-2 sm:mb-4 flex-shrink-0">
           <Input
             placeholder={`Search ${activeTab} bosses...`}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full"
+            className="w-full h-9 sm:h-10"
           />
         </div>
         <div className="flex-1 min-h-0">
-          <ScrollArea className="h-full rounded border p-4" style={{ border: '0' }}>
+          <ScrollArea className="h-full rounded border p-2 sm:p-4 overflow-auto" style={{ border: '0' }}>
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
             {([['monthly', filteredGroupedMonthly], ['weekly', filteredGroupedWeekly], ['daily', filteredGroupedDaily]] as const).map(([key, data]) => (
               <TabsContent key={key} value={key} className="m-0">
@@ -261,7 +261,7 @@ const BossEditorMobileLayout: React.FC<BossEditorMobileLayoutProps> = ({
                     <p>No {key} bosses found matching your search.</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 xs:grid-cols-2 gap-2 sm:gap-4">
                     {data.map(([base, variants]) => {
                       const isSelected = !!baseEnabledByBase[makeGroupKey(key, base)];
                       const selectedVariant = selectedVariantByBase[makeGroupKey(key, base)] || variants[0]?.name;

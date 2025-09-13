@@ -91,10 +91,10 @@ const BossEditorDesktopLayout: React.FC<BossEditorDesktopLayoutProps> = ({
   getCurrentlySelectedBosses,
 }) => {
   return (
-    <div className="hidden lg:flex lg:flex-row gap-4">
+    <div className="hidden lg:flex lg:flex-row gap-2 sm:gap-4">
       {/* Desktop Sidebar */}
-      <div className="w-48 flex-shrink-0">
-        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border border-border rounded-lg p-2">
+      <div className="w-44 xl:w-48 flex-shrink-0">
+        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border border-border rounded-lg p-2 h-fit">
           <nav className="space-y-2 py-2">
             <Button
               onClick={() => setActiveTab('monthly')}
@@ -310,15 +310,15 @@ const BossEditorDesktopLayout: React.FC<BossEditorDesktopLayoutProps> = ({
       {/* Main Content - Scrollable Boss Grid */}
       <div className="flex-1 min-w-0 overflow-hidden">
         {/* Search Bar */}
-        <div className="mb-4">
+        <div className="mb-2 sm:mb-4">
           <Input
             placeholder={`Search ${activeTab} bosses...`}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full max-w-sm"
+            className="w-full max-w-sm h-9 sm:h-10"
           />
         </div>
-        <ScrollArea className="h-[50vh] sm:h-[60vh] lg:h-[65vh] rounded border p-4" style={{ border: '0' }}>
+        <ScrollArea className="h-[45vh] sm:h-[55vh] lg:h-[60vh] xl:h-[65vh] rounded border p-2 sm:p-4 overflow-auto" style={{ border: '0' }}>
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
             {([['monthly', filteredGroupedMonthly], ['weekly', filteredGroupedWeekly], ['daily', filteredGroupedDaily]] as const).map(([key, data]) => (
               <TabsContent key={key} value={key} className="m-0">
@@ -327,7 +327,7 @@ const BossEditorDesktopLayout: React.FC<BossEditorDesktopLayoutProps> = ({
                     <p>No {key} bosses found matching your search.</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 3xl:grid-cols-5 gap-2 sm:gap-3 lg:gap-4">
                     {data.map(([base, variants]) => {
                       const isSelected = !!baseEnabledByBase[makeGroupKey(key, base)];
                       const selectedVariant = selectedVariantByBase[makeGroupKey(key, base)] || variants[0]?.name;

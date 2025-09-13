@@ -76,7 +76,7 @@ const BossCard: React.FC<BossCardProps> = ({
 
   return (
     <div
-      className={`relative rounded-lg border-2 transition-all duration-200 hover:shadow-lg ${
+      className={`relative rounded-lg border-2 transition-all duration-200 hover:shadow-lg min-h-[200px] sm:min-h-[220px] ${
         isSelected
           ? 'border-primary bg-primary/5 shadow-md'
           : 'border-border hover:border-primary/50'
@@ -97,14 +97,14 @@ const BossCard: React.FC<BossCardProps> = ({
         </div>
       )}
 
-      <div className="p-4 cursor-pointer" onClick={handleToggle}>
+      <div className="p-3 sm:p-4 cursor-pointer h-full flex flex-col" onClick={handleToggle}>
         {/* Boss Image */}
-        <div className="flex justify-center mb-3">
-          <div className="relative p-2 bg-gradient-to-br from-background to-muted/20 rounded-lg border border-border/50">
+        <div className="flex justify-center mb-2 sm:mb-3 flex-shrink-0">
+          <div className="relative p-1.5 sm:p-2 bg-gradient-to-br from-background to-muted/20 rounded-lg border border-border/50">
             <img
               src={variants[0].imageUrl}
               alt={base}
-              className="h-6 w-6 rounded-sm object-cover border border-border/30"
+              className="h-5 w-5 sm:h-6 sm:w-6 rounded-sm object-cover border border-border/30"
               style={{
                 imageRendering: 'pixelated'
               }}
@@ -117,17 +117,17 @@ const BossCard: React.FC<BossCardProps> = ({
         </div>
 
         {/* Boss Name */}
-        <h3 className="font-semibold text-sm text-center mb-2 text-primary truncate">
+        <h3 className="font-semibold text-xs sm:text-sm text-center mb-2 text-primary truncate flex-shrink-0">
           {base}
         </h3>
 
         {/* Difficulty Selector */}
-        <div className="mb-3">
+        <div className="mb-2 sm:mb-3 flex-shrink-0">
           <Select
             value={selectedVariant}
             onValueChange={onVariantChange}
           >
-            <SelectTrigger className="w-full h-8 text-xs" aria-label="Select boss variant">
+            <SelectTrigger className="w-full h-7 sm:h-8 text-xs" aria-label="Select boss variant">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -141,24 +141,24 @@ const BossCard: React.FC<BossCardProps> = ({
         </div>
 
         {/* Party Size */}
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between mb-2 flex-shrink-0">
           <span className="text-xs text-muted-foreground">Party:</span>
           <div className="flex items-center gap-1">
             <Button
               type="button"
               variant="outline"
               size="sm"
-              className="h-6 w-6 p-0"
+              className="h-5 w-5 sm:h-6 sm:w-6 p-0 text-xs"
               onClick={handlePartySizeDecrease}
             >
               -
             </Button>
-            <span className="text-xs w-6 text-center">{partySize}</span>
+            <span className="text-xs w-5 sm:w-6 text-center">{partySize}</span>
             <Button
               type="button"
               variant="outline"
               size="sm"
-              className="h-6 w-6 p-0"
+              className="h-5 w-5 sm:h-6 sm:w-6 p-0 text-xs"
               onClick={handlePartySizeIncrease}
             >
               +
@@ -167,9 +167,9 @@ const BossCard: React.FC<BossCardProps> = ({
         </div>
 
         {/* Mesos Estimate */}
-        <div className="text-center">
+        <div className="text-center flex-1 flex flex-col justify-end">
           <div className="text-xs text-muted-foreground">Est. Mesos</div>
-          <div className="font-semibold text-sm text-primary">
+          <div className="font-semibold text-xs sm:text-sm text-primary">
             {mesosShare.toLocaleString()}
           </div>
         </div>

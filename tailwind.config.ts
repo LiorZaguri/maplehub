@@ -8,6 +8,10 @@ export default {
   ],
   theme: {
     extend: {
+      screens: {
+        'xs': '475px',
+        '3xl': '1600px',
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

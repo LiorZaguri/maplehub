@@ -401,7 +401,7 @@ const BossEditorDialog: React.FC<BossEditorDialogProps> = ({
         clearEditingState();
       }
     }}>
-      <DialogContent className="max-w-6xl h-[90vh] flex flex-col">
+      <DialogContent className="max-w-[95vw] sm:max-w-4xl lg:max-w-6xl xl:max-w-7xl w-full h-[95vh] sm:h-[90vh] flex flex-col p-2 sm:p-4 lg:p-6">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle>
             {pendingBulkNames 
