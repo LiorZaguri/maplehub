@@ -159,7 +159,7 @@ export const LiberationCalculator = () => {
 
         {/* Selected Characters Display */}
         {selectedCharacters.length > 0 && (
-          <ScrollArea ref={scrollAreaRef} className="w-full rounded-md border whitespace-nowrap">
+          <ScrollArea ref={scrollAreaRef} className="w-full rounded-md whitespace-nowrap">
             <div className="flex w-max space-x-4 pb-4">
               {selectedCharacters.map((character) => {
                 const isActive = activeCharacter?.id === character.id;
